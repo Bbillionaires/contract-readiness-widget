@@ -1,0 +1,16 @@
+{
+  "ABC123": {
+    "active": true,
+    "allowed_domains": ["client1.com", "www.client1.com"],
+    "stripe_customer_id": "cus_123",
+    "stripe_subscription_item_id": "si_123",
+    "plan": "standard"
+  },
+  "XYZ789": {
+    "active": true,
+    "allowed_domains": ["agency.com"],
+    "stripe_customer_id": "cus_456",
+    "stripe_subscription_item_id": "si_456",
+    "plan": "white_label"
+  }
+}
