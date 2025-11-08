@@ -66,11 +66,13 @@ app.get('/license', (req, res) => {
 });
 
 // Usage log endpoint
-app.post('/log', (req, res) => {
+// --- /log endpoint with Stripe metered billing ---
+app.post('/log', async (req, res) => {
   const { license, score, letter, insuranceStatus } = req.body || {};
   const origin = req.headers.origin || req.headers.referer || '';
   const reqDomain = getDomainFromOrigin(origin);
 
+  // Log submission locally
   const logLine = JSON.stringify({
     ts: new Date().toISOString(),
     license,
@@ -79,6 +81,32 @@ app.post('/log', (req, res) => {
     insuranceStatus,
     domain: reqDomain
   }) + '\n';
+
+  fs.appendFile(path.join(__dirname, 'usage.log'), logLine, (err) => {
+    if (err) console.error('Failed to write usage log:', err.message);
+  });
+
+  // --- Stripe metered billing (10¢ per submission) ---
+  try {
+    const lic = licenses[license];
+    if (stripe && lic && lic.stripe_subscription_item_id) {
+      await stripe.subscriptionItems.createUsageRecord(
+        lic.stripe_subscription_item_id,
+        {
+          quantity: 1,
+          timestamp: Math.floor(Date.now() / 1000),
+          action: 'increment'
+        }
+      );
+      console.log('Usage recorded for license:', license);
+    }
+  } catch (err) {
+    console.error('Stripe usage error:', err.message);
+  }
+  // ---------------------------------------------------
+
+  res.json({ ok: true });
+});
 
   fs.appendFile(path.join(__dirname, 'usage.log'), logLine, (err) => {
     if (err) console.error('Failed to write usage log:', err.message);
