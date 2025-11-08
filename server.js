@@ -179,6 +179,50 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+app.get('/admin/licenses', requireAdmin, (req, res) => {
+  const search = (req.query.search || '').toLowerCase();
+  const items = Object.entries(licenses).map(([key, lic]) => ({
+    key,
+    ...lic
+  }));
+
+  let filtered = items;
+  if (search) {
+    filtered = items.filter(item =>
+      (item.first_name || '').toLowerCase().includes(search) ||
+      (item.last_name || '').toLowerCase().includes(search) ||
+      (item.email || '').toLowerCase().includes(search) ||
+      (item.company || '').toLowerCase().includes(search) ||
+      item.key.toLowerCase().includes(search)
+    );
+  }
+
+  // newest first
+  filtered.sort((a, b) => {
+    const ta = new Date(a.created_at || 0).getTime();
+    const tb = new Date(b.created_at || 0).getTime();
+    return tb - ta;
+  });
+
+  res.json({ ok: true, licenses: filtered });
+});
+
+app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
+  const key = req.params.key;
+  const lic = licenses[key];
+  if (!lic) {
+    return res.status(404).json({ ok: false, error: 'not_found' });
+  }
+
+  const body = req.body || {};
+  if (typeof body.active === 'boolean') {
+    lic.active = body.active;
+  }
+
+  saveLicenses();
+  res.json({ ok: true, license: { key, ...lic } });
+});
+
 app.listen(PORT, () => {
   console.log('API listening on port', PORT);
 });
