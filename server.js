@@ -117,6 +117,58 @@ app.post('/log', async (req, res) => {
   res.json({ ok: true });
 });
 
+// Look up license by email or Stripe session_id
+app.get('/lookup', async (req, res) => {
+  try {
+    let email = (req.query.email || '').trim().toLowerCase();
+    const sessionId = (req.query.session_id || '').trim();
+
+    // If no email but we have a Stripe session, fetch email from Stripe
+    if (!email && sessionId && stripe) {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        const detailsEmail = session.customer_details && session.customer_details.email;
+        if (detailsEmail) {
+          email = detailsEmail.trim().toLowerCase();
+        }
+      } catch (err) {
+        console.error('Error retrieving Stripe session:', err.message);
+      }
+    }
+
+    if (!email) {
+      return res.status(400).json({ ok: false, error: 'missing_email_or_session' });
+    }
+
+    // Find all licenses with this email
+    const matches = Object.entries(licenses)
+      .filter(([key, lic]) => (lic.email || '').toLowerCase() === email)
+      .map(([key, lic]) => ({ key, ...lic }));
+
+    if (!matches.length) {
+      return res.json({ ok: false, error: 'no_license_found_for_email', email });
+    }
+
+    // Pick the most recent by created_at
+    matches.sort((a, b) => {
+      const ta = new Date(a.created_at || 0).getTime();
+      const tb = new Date(b.created_at || 0).getTime();
+      return tb - ta;
+    });
+
+    const latest = matches[0];
+
+    res.json({
+      ok: true,
+      license_key: latest.key,
+      license: latest
+    });
+  } catch (err) {
+    console.error('Lookup error:', err.message);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log('API listening on port', PORT);
 });
