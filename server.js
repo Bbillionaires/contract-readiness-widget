@@ -169,6 +169,16 @@ app.get('/lookup', async (req, res) => {
   }
 });
 
+const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+
+function requireAdmin(req, res, next) {
+  const token = req.headers['x-admin-secret'] || req.query.admin;
+  if (!ADMIN_SECRET || token !== ADMIN_SECRET) {
+    return res.status(403).json({ ok: false, error: 'forbidden' });
+  }
+  next();
+}
+
 app.listen(PORT, () => {
   console.log('API listening on port', PORT);
 });
