@@ -12,21 +12,64 @@
     }
     h2 {
       text-align: center;
+      margin-bottom: 8px;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      max-width: 320px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    label {
+      font-size: 13px;
+      text-align: left;
+      margin-top: 4px;
     }
     input, button {
       margin: 4px 0;
       padding: 6px;
       font-size: 14px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1e40af;
+    }
+    .status {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    .status.error {
+      color: #b91c1c;
+    }
+    .status.ok {
+      color: #15803d;
+    }
+    .metrics {
+      text-align: center;
+      margin-top: 6px;
+      font-size: 13px;
+      color: #374151;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      font-size: 13px;
+      font-size: 12px;
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 6px;
+      padding: 4px;
       text-align: left;
     }
     th {
@@ -35,18 +78,6 @@
     tr.inactive {
       background: #fee2e2;
     }
-    .controls {
-      display: flex;
-      flex-direction: column;
-      max-width: 300px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    .status {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 13px;
-    }
   </style>
 </head>
 <body>
@@ -54,12 +85,15 @@
   <div class="controls">
     <label>Admin Secret:</label>
     <input id="adminSecret" type="password" placeholder="Enter admin secret">
+
     <label>Search (name, email, company, license):</label>
     <input id="search" type="text" placeholder="Search...">
+
     <button id="loadBtn">Load Licenses</button>
   </div>
 
-  <div class="status" id="statusMsg"></div>
+  <div id="statusMsg" class="status"></div>
+  <div id="metrics" class="metrics"></div>
 
   <table id="table" style="display:none;">
     <thead>
@@ -78,35 +112,74 @@
   </table>
 
   <script>
+    // 🔴 Make sure this matches your Render URL
     const apiBase = 'https://contract-readiness-widget.onrender.com';
 
     async function loadLicenses() {
       const secret = document.getElementById('adminSecret').value.trim();
       const search = document.getElementById('search').value.trim();
       const statusMsg = document.getElementById('statusMsg');
-
-      statusMsg.textContent = 'Loading licenses...';
-      const res = await fetch(apiBase + '/admin/licenses?search=' + encodeURIComponent(search), {
-        headers: { 'x-admin-secret': secret }
-      });
-
-      const data = await res.json();
-      if (!data.ok) {
-        statusMsg.textContent = 'Error: ' + (data.error || 'Unable to load');
-        return;
-      }
-
+      const metrics = document.getElementById('metrics');
       const table = document.getElementById('table');
       const tbody = table.querySelector('tbody');
-      tbody.innerHTML = '';
 
-      if (!data.licenses.length) {
-        statusMsg.textContent = 'No licenses found.';
-        table.style.display = 'none';
+      statusMsg.textContent = 'Loading licenses...';
+      statusMsg.className = 'status';
+      metrics.textContent = '';
+      tbody.innerHTML = '';
+      table.style.display = 'none';
+
+      if (!secret) {
+        statusMsg.textContent = 'Please enter your admin secret.';
+        statusMsg.className = 'status error';
         return;
       }
 
-      data.licenses.forEach(lic => {
+      let data;
+      try {
+        const res = await fetch(apiBase + '/admin/licenses?search=' + encodeURIComponent(search), {
+          headers: { 'x-admin-secret': secret }
+        });
+
+        if (!res.ok) {
+          statusMsg.textContent = 'Server error: HTTP ' + res.status;
+          statusMsg.className = 'status error';
+          return;
+        }
+
+        data = await res.json();
+      } catch (err) {
+        console.error(err);
+        statusMsg.textContent = 'Error contacting server. Check API URL or network.';
+        statusMsg.className = 'status error';
+        return;
+      }
+
+      if (!data.ok) {
+        statusMsg.textContent = 'Error: ' + (data.error || 'Unable to load');
+        statusMsg.className = 'status error';
+        return;
+      }
+
+      const licenses = data.licenses || [];
+
+      if (!licenses.length) {
+        statusMsg.textContent = 'No licenses found.';
+        statusMsg.className = 'status';
+        return;
+      }
+
+      // Live metrics
+      const total = licenses.length;
+      const activeCount = licenses.filter(l => l.active).length;
+      const inactiveCount = total - activeCount;
+      const lastCreated = licenses[0].created_at || '';
+
+      metrics.textContent =
+        `Total: ${total} | Active: ${activeCount} | Inactive: ${inactiveCount}` +
+        (lastCreated ? ` | Last created: ${lastCreated}` : '');
+
+      licenses.forEach(lic => {
         const tr = document.createElement('tr');
         if (!lic.active) tr.classList.add('inactive');
         const domains = (lic.allowed_domains || []).join(', ');
@@ -127,28 +200,33 @@
       });
 
       table.style.display = 'table';
-      statusMsg.textContent = `Loaded ${data.licenses.length} license(s).`;
+      statusMsg.textContent = `Loaded ${licenses.length} license(s).`;
+      statusMsg.className = 'status ok';
 
+      // Hook up toggle buttons
       tbody.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', async () => {
           const key = btn.getAttribute('data-key');
           const active = btn.getAttribute('data-active') === '1';
           const newActive = !active;
 
-          const res = await fetch(apiBase + '/admin/licenses/' + encodeURIComponent(key), {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-admin-secret': secret
-            },
-            body: JSON.stringify({ active: newActive })
-          });
-
-          const updated = await res.json();
-          if (!updated.ok) {
-            alert('Error updating license: ' + (updated.error || 'unknown'));
-          } else {
-            loadLicenses();
+          try {
+            const res = await fetch(apiBase + '/admin/licenses/' + encodeURIComponent(key), {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-admin-secret': secret
+              },
+              body: JSON.stringify({ active: newActive })
+            });
+            const updated = await res.json();
+            if (!updated.ok) {
+              alert('Error updating license: ' + (updated.error || 'unknown'));
+            } else {
+              loadLicenses();
+            }
+          } catch (err) {
+            alert('Network error updating license.');
           }
         });
       });
