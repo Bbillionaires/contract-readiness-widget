@@ -1,383 +1,237 @@
-<!doctype html>
+      <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Contract Readiness Widget</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  <title>Contract Readiness Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    :root {
-      --accent: #2563eb;
-      --bg-light: #ffffff;
-      --bg-dark: #111827;
-      --text-light: #111827;
-      --text-dark: #f9fafb;
-      --card-light: #f9fafb;
-      --card-dark: #1f2937;
-    }
-
     body {
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      color: #111827;
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background-color: var(--bg-light);
-      color: var(--text-light);
+      padding: 0;
     }
-
-    body.theme-dark {
-      background-color: var(--bg-dark);
-      color: var(--text-dark);
-    }
-
-    .wrapper {
-      max-width: 800px;
+    .container {
+      max-width: 600px;
       margin: 0 auto;
-      padding: 16px;
-      box-sizing: border-box;
-    }
-
-    .card {
+      background: white;
+      padding: 20px;
       border-radius: 12px;
-      padding: 16px;
-      box-sizing: border-box;
-      background-color: var(--card-light);
-      box-shadow: 0 10px 25px rgba(15,23,42,0.08);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-top: 25px;
     }
-
-    body.theme-dark .card {
-      background-color: var(--card-dark);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-    }
-
     h1 {
-      font-size: 22px;
-      margin: 0 0 8px;
+      text-align: center;
+      margin-bottom: 10px;
+      color: #1e3a8a;
     }
-
-    p {
-      margin: 4px 0 8px;
-      font-size: 14px;
-      line-height: 1.4;
-    }
-
     fieldset {
-      border: 1px solid rgba(148,163,184,0.6);
-      border-radius: 8px;
-      margin: 10px 0;
-      padding: 8px 10px;
-    }
-
-    legend {
-      font-weight: 600;
-      font-size: 14px;
-      padding: 0 4px;
-    }
-
-    label {
-      font-size: 13px;
-      display: block;
-      margin: 3px 0;
-    }
-
-    button {
-      margin-top: 8px;
-      padding: 8px 16px;
-      border-radius: 999px;
       border: none;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      background-color: var(--accent);
-      color: white;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .result {
-      margin-top: 12px;
+      margin-bottom: 12px;
+      background: #f3f4f6;
       padding: 10px;
       border-radius: 8px;
-      border: 1px solid rgba(148,163,184,0.7);
-      font-size: 14px;
     }
-
-    .hidden {
-      display: none;
+    legend {
+      font-weight: bold;
+      color: #111827;
     }
-
-    .logo-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
+    button, input[type="submit"] {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 15px;
+      cursor: pointer;
     }
-
-    .logo-row img {
-      max-height: 32px;
-      width: auto;
+    button:hover, input[type="submit"]:hover {
+      background: #1e40af;
     }
-
-    .tag {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      background: rgba(37,99,235,0.1);
-      color: var(--accent);
-      margin-left: 4px;
-    }
-
-    .error {
-      margin-top: 10px;
-      padding: 8px 10px;
+    .hidden { display: none; }
+    #result {
+      margin-top: 15px;
+      background: #f3f4f6;
+      padding: 12px;
       border-radius: 8px;
-      background: #fee2e2;
-      color: #991b1b;
-      font-size: 13px;
     }
-
-    body.theme-dark .error {
-      background: #7f1d1d;
-      color: #fee2e2;
-    }
+    ul { margin: 8px 0 0 20px; }
+    .tag { font-size: 0.9em; color: #555; }
   </style>
 </head>
 <body>
-  <div class="wrapper">
-    <div class="card">
-      <div class="logo-row">
-        <img id="partnerLogo" alt="" style="display:none;">
-        <div>
-          <h1 id="widgetTitle">Contract Readiness Checker</h1>
-          <p id="widgetSubtitle">
-            Answer 5 quick questions to see how ready your company is for residential, commercial, and government contracts.
-          </p>
+  <div class="container">
+    <h1>Contract Readiness Calculator</h1>
+    <form id="readinessForm">
+
+      <!-- Question 1 -->
+      <fieldset>
+        <legend>1. Insurance Coverage</legend>
+        <p>Do you have active liability insurance coverage?</p>
+        <label><input type="radio" name="insurance" value="yes"> Yes</label><br>
+        <label><input type="radio" name="insurance" value="no"> No</label>
+      </fieldset>
+
+      <!-- Question 2 -->
+      <fieldset>
+        <legend>2. Bonding Capacity</legend>
+        <p>Do you currently have a performance or payment bond?</p>
+        <label><input type="radio" name="bond" value="yes"> Yes</label><br>
+        <label><input type="radio" name="bond" value="no"> No</label>
+      </fieldset>
+
+      <!-- Question 3 -->
+      <fieldset>
+        <legend>3. Equipment</legend>
+        <p>Do you have the equipment required for your trade?</p>
+        <label><input type="radio" name="equipment" value="yes"> Yes</label><br>
+        <label><input type="radio" name="equipment" value="no"> No</label>
+      </fieldset>
+
+      <!-- Question 4 -->
+      <fieldset>
+        <legend>4. Financial Documents</legend>
+        <p>Do you have at least 2 years of tax returns or financial statements?</p>
+        <label><input type="radio" name="financials" value="yes"> Yes</label><br>
+        <label><input type="radio" name="financials" value="no"> No</label>
+      </fieldset>
+
+      <!-- Question 5 -->
+      <fieldset>
+        <legend>5. Experience</legend>
+        <p>Do you have prior projects or references in similar work?</p>
+        <label><input type="radio" name="experience" value="yes"> Yes</label><br>
+        <label><input type="radio" name="experience" value="no"> No</label>
+      </fieldset>
+
+      <!-- Advanced section (optional) -->
+      <fieldset>
+        <legend>Advanced Readiness (Optional)</legend>
+        <p>Answer these for a deeper readiness checklist. This will not affect your letter grade.</p>
+        <button type="button" id="toggleAdvanced">Show advanced questions</button>
+
+        <div id="advancedBlock" class="hidden" style="margin-top:8px;">
+          <p><strong>6. Capability Statement</strong></p>
+          <label><input type="radio" name="capability" value="yes"> Yes</label>
+          <label><input type="radio" name="capability" value="no"> No</label>
+
+          <p style="margin-top:8px;"><strong>7. Certifications</strong></p>
+          <label><input type="checkbox" name="certs" value="8a"> 8(a)</label>
+          <label><input type="checkbox" name="certs" value="wosb"> WOSB</label>
+          <label><input type="checkbox" name="certs" value="sdvosb"> SDVOSB</label>
+          <label><input type="checkbox" name="certs" value="hubzone"> HUBZone</label>
+          <label><input type="checkbox" name="certs" value="mbe"> MBE/DBE</label>
+          <label><input type="checkbox" name="certs" value="none"> None</label>
+
+          <p style="margin-top:8px;"><strong>8. Bonding Capacity</strong></p>
+          <label><input type="radio" name="bonding" value="none"> None</label>
+          <label><input type="radio" name="bonding" value="100k"> Up to $100k</label>
+          <label><input type="radio" name="bonding" value="500k"> $100k–$500k</label>
+          <label><input type="radio" name="bonding" value="500kplus"> $500k+</label>
+
+          <p style="margin-top:8px;"><strong>9. Safety Program</strong></p>
+          <label><input type="radio" name="safety" value="yes"> Yes</label>
+          <label><input type="radio" name="safety" value="partial"> Partially</label>
+          <label><input type="radio" name="safety" value="no"> No</label>
+
+          <p style="margin-top:8px;"><strong>10. Government Past Performance</strong></p>
+          <label><input type="radio" name="govpast" value="none"> None</label>
+          <label><input type="radio" name="govpast" value="1-2"> 1–2 Projects</label>
+          <label><input type="radio" name="govpast" value="3+"> 3+ Projects</label>
+
+          <p style="margin-top:8px;"><strong>11. Subcontractor/Supplier Network</strong></p>
+          <label><input type="radio" name="network" value="yes"> Yes</label>
+          <label><input type="radio" name="network" value="partial"> Partial</label>
+          <label><input type="radio" name="network" value="no"> No</label>
         </div>
-      </div>
+      </fieldset>
 
-      <div id="licenseError" class="error hidden">
-        License inactive or missing. Please contact the widget provider.
-      </div>
+      <input type="submit" value="Calculate Readiness">
+    </form>
 
-      <form id="readinessForm">
-        <!-- Q1: Years in business -->
-        <fieldset>
-          <legend>1. Years in business</legend>
-          <label><input type="radio" name="years" value="<1"> Less than 1 year</label>
-          <label><input type="radio" name="years" value="1-2"> 1–2 years</label>
-          <label><input type="radio" name="years" value="3+"> 3+ years</label>
-        </fieldset>
-
-        <!-- Q2: SAM.gov -->
-        <fieldset>
-          <legend>2. Active SAM.gov registration (UEI)?</legend>
-          <label><input type="radio" name="sam" value="yes"> Yes</label>
-          <label><input type="radio" name="sam" value="no"> No</label>
-        </fieldset>
-
-        <!-- Q3: Financials -->
-        <fieldset>
-          <legend>3. 2+ years of tax returns or financial statements ready?</legend>
-          <label><input type="radio" name="financials" value="yes"> Yes</label>
-          <label><input type="radio" name="financials" value="no"> No</label>
-        </fieldset>
-
-        <!-- Q4: Insurance with upgrade option -->
-        <fieldset>
-          <legend>4. Insurance &amp; upgrade ability</legend>
-          <p style="margin:4px 0;">
-            Do you currently carry at least <strong>$1,000,000</strong> in general liability insurance and workers’ compensation (if required in your state)?
-          </p>
-          <label><input type="radio" name="insurance_current" value="yes"> Yes, we already carry that or more</label>
-          <label><input type="radio" name="insurance_current" value="no"> No, we currently carry less</label>
-
-          <div id="insuranceUpgradeBlock" class="hidden" style="margin-top:6px;">
-            <p style="margin:4px 0;"><strong>If not, could you increase coverage to that level within 30 days if a contract required it?</strong></p>
-            <label><input type="radio" name="insurance_upgrade" value="yes"> Yes, we can upgrade if needed</label>
-            <label><input type="radio" name="insurance_upgrade" value="no"> No, we cannot or are not ready to upgrade</label>
-          </div>
-        </fieldset>
-
-        <!-- Q5: Similar projects -->
-        <fieldset>
-          <legend>5. Past performance</legend>
-          <p style="margin:4px 0;">Have you completed at least <strong>3 projects similar</strong> to the work you want to bid on?</p>
-          <label><input type="radio" name="similar" value="yes"> Yes</label>
-          <label><input type="radio" name="similar" value="no"> No</label>
-        </fieldset>
-
-        <button type="submit" id="submitBtn" disabled>Calculate Readiness</button>
-      </form>
-
-      <div id="result" class="result hidden"></div>
-    </div>
+    <div id="result" class="hidden"></div>
   </div>
 
   <script>
-    // Read URL parameters
-    const params = new URLSearchParams(window.location.search);
-    const licenseKey = params.get('license') || '';
-    const logoUrl = params.get('logo');
-    const theme = (params.get('theme') || 'light').toLowerCase();
-    const accentColor = params.get('color') || '#2563eb';
-    const redirectUrl = params.get('redirect');
-
-    // 🔴 CHANGE THIS to your actual Render URL
-    const apiBase = 'https://contract-readiness-widget.onrender.com';
-
-    // Apply theme & accent
-    document.documentElement.style.setProperty('--accent', accentColor);
-    if (theme === 'dark') {
-      document.body.classList.add('theme-dark');
-    }
-
-    // Set logo if provided
-    if (logoUrl) {
-      const img = document.getElementById('partnerLogo');
-      img.src = logoUrl;
-      img.style.display = 'block';
-    }
-
-    const licenseErrorEl = document.getElementById('licenseError');
     const formEl = document.getElementById('readinessForm');
-    const submitBtn = document.getElementById('submitBtn');
     const resultEl = document.getElementById('result');
 
-    // Show/hide insurance upgrade follow-up
-    const insuranceRadios = document.querySelectorAll('input[name="insurance_current"]');
-    const upgradeBlock = document.getElementById('insuranceUpgradeBlock');
-
-    insuranceRadios.forEach(r => {
-      r.addEventListener('change', () => {
-        if (r.value === 'no') upgradeBlock.classList.remove('hidden');
-        else upgradeBlock.classList.add('hidden');
-      });
+    // Toggle Advanced block
+    const advToggleBtn = document.getElementById('toggleAdvanced');
+    const advBlock = document.getElementById('advancedBlock');
+    advToggleBtn.addEventListener('click', () => {
+      const hidden = advBlock.classList.contains('hidden');
+      if (hidden) {
+        advBlock.classList.remove('hidden');
+        advToggleBtn.textContent = 'Hide advanced questions';
+      } else {
+        advBlock.classList.add('hidden');
+        advToggleBtn.textContent = 'Show advanced questions';
+      }
     });
 
-    function scoreToLetter(s) {
-      if (s >= 4.5) return 'A';
-      if (s >= 3.5) return 'B';
-      if (s >= 2.5) return 'C';
-      if (s >= 1.5) return 'D';
-      return 'F';
-    }
-
-    // 1) LICENSE CHECK HOOK (LIVE MODE)
-    async function checkLicense() {
-      if (!licenseKey) {
-        licenseErrorEl.textContent = 'License key missing in iframe URL.';
-        licenseErrorEl.classList.remove('hidden');
-        submitBtn.disabled = true;
-        return false;
-      }
-
-      try {
-        const res = await fetch(apiBase + '/license?key=' + encodeURIComponent(licenseKey));
-        if (!res.ok) throw new Error('Bad response');
-        const data = await res.json();
-
-        if (!data.active) {
-          licenseErrorEl.textContent = 'License inactive or expired. Please contact the widget provider.';
-          licenseErrorEl.classList.remove('hidden');
-          submitBtn.disabled = true;
-          return false;
-        }
-
-        // License OK
-        licenseErrorEl.classList.add('hidden');
-        submitBtn.disabled = false;
-        return true;
-      } catch (e) {
-        licenseErrorEl.textContent = 'Unable to verify license. Please try again later.';
-        licenseErrorEl.classList.remove('hidden');
-        submitBtn.disabled = true;
-        return false;
-      }
-    }
-
-    // Call license check on load
-    checkLicense();
-
-    // 2) FORM SUBMIT + USAGE LOG
-    formEl.addEventListener('submit', async function(e) {
+    formEl.addEventListener('submit', e => {
       e.preventDefault();
 
-      let score = 0;
+      // Quick score: 5 core yes/no
+      const fields = ['insurance','bond','equipment','financials','experience'];
+      let yesCount = 0;
+      fields.forEach(f=>{
+        const val=(document.querySelector('input[name="'+f+'"]:checked')||{}).value;
+        if(val==='yes') yesCount++;
+      });
+      const pct = Math.round((yesCount/fields.length)*100);
+      let letter='F';
+      if(pct>=90) letter='A';
+      else if(pct>=80) letter='B';
+      else if(pct>=70) letter='C';
+      else if(pct>=60) letter='D';
 
-      // Q1: Years
-      const years = (document.querySelector('input[name="years"]:checked') || {}).value;
-      if (years === '3+') score += 1;
-      else if (years === '1-2') score += 0.5;
-
-      // Q2: SAM
-      const sam = (document.querySelector('input[name="sam"]:checked') || {}).value;
-      if (sam === 'yes') score += 1;
-
-      // Q3: Financials
-      const fin = (document.querySelector('input[name="financials"]:checked') || {}).value;
-      if (fin === 'yes') score += 1;
-
-      // Q4: Insurance
-      const insCur = (document.querySelector('input[name="insurance_current"]:checked') || {}).value;
-      const insUpg = (document.querySelector('input[name="insurance_upgrade"]:checked') || {}).value;
-      let insuranceStatus = 'Not answered';
-
-      if (insCur === 'yes') {
-        score += 1;
-        insuranceStatus = 'Insured-Ready (meets $1M+ GL requirement)';
-      } else if (insCur === 'no') {
-        if (insUpg === 'yes') {
-          score += 0.5;
-          insuranceStatus = 'Upgrade-Ready (can increase coverage in 30 days)';
-        } else if (insUpg === 'no') {
-          insuranceStatus = 'Insurance Gap (below limits and no upgrade plan)';
-        }
-      }
-
-      // Q5: Similar projects
-      const similar = (document.querySelector('input[name="similar"]:checked') || {}).value;
-      if (similar === 'yes') score += 1;
-
-      const pct = Math.round((score / 5) * 100);
-      const letter = scoreToLetter(score);
+      const insuranceStatus = (document.querySelector('input[name="insurance"]:checked')||{}).value==='yes'?'Insured':'Not insured';
 
       resultEl.classList.remove('hidden');
       resultEl.innerHTML =
-        '<p><strong>Readiness Score:</strong> ' + pct + '% (' + letter + ')</p>' +
-        '<p><strong>Insurance Status:</strong> ' + insuranceStatus + '</p>' +
+        '<p><strong>Readiness Score:</strong> '+pct+'% ('+letter+')</p>'+
+        '<p><strong>Insurance Status:</strong> '+insuranceStatus+'</p>'+
         '<p class="tag">Upgrade-Ready means you can qualify once coverage is increased.</p>';
 
-      // 3) LOG USAGE TO YOUR API FOR BILLING (10¢ / query)
-      try {
-        await fetch(apiBase + '/log', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            license: licenseKey,
-            score: pct,
-            letter: letter,
-            insuranceStatus: insuranceStatus,
-            userAgent: navigator.userAgent
-          })
-        });
-      } catch (e) {
-        // fail silently
-      }
+      // Advanced checklist (optional)
+      const advLines=[];
+      const capability=(document.querySelector('input[name="capability"]:checked')||{}).value;
+      if(capability==='yes') advLines.push('✔ Capability statement: Ready');
+      else if(capability==='no') advLines.push('✖ Capability statement: Missing');
 
-      // 4) OPTIONAL REDIRECT
-      if (redirectUrl) {
-        setTimeout(() => {
-          try {
-            window.top.location.href = redirectUrl;
-          } catch (e) {
-            window.location.href = redirectUrl;
-          }
-        }, 2000);
+      const certValues=Array.from(document.querySelectorAll('input[name="certs"]:checked')).map(c=>c.value);
+      if(certValues.length && !certValues.includes('none')) advLines.push('✔ Certifications: '+certValues.join(', '));
+      else if(certValues.includes('none')) advLines.push('✖ Certifications: None');
+
+      const bonding=(document.querySelector('input[name="bonding"]:checked')||{}).value;
+      if(bonding==='500kplus') advLines.push('✔ Bonding: $500k+ capacity');
+      else if(bonding==='500k') advLines.push('✔ Bonding: $100k–$500k');
+      else if(bonding==='100k') advLines.push('△ Bonding: Up to $100k');
+      else if(bonding==='none') advLines.push('✖ Bonding: None');
+
+      const safety=(document.querySelector('input[name="safety"]:checked')||{}).value;
+      if(safety==='yes') advLines.push('✔ Safety program: Formal');
+      else if(safety==='partial') advLines.push('△ Safety: Partial');
+      else if(safety==='no') advLines.push('✖ Safety: None');
+
+      const govpast=(document.querySelector('input[name="govpast"]:checked')||{}).value;
+      if(govpast==='3+') advLines.push('✔ Gov/Public: 3+ projects');
+      else if(govpast==='1-2') advLines.push('△ Gov/Public: 1–2 projects');
+      else if(govpast==='none') advLines.push('✖ Gov/Public: None');
+
+      const network=(document.querySelector('input[name="network"]:checked')||{}).value;
+      if(network==='yes') advLines.push('✔ Subcontractor & supplier network: Documented');
+      else if(network==='partial') advLines.push('△ Network: Partial');
+      else if(network==='no') advLines.push('✖ Network: None');
+
+      if(advLines.length){
+        resultEl.innerHTML+='<hr><p><strong>Advanced Readiness Checklist:</strong></p><ul>'+
+          advLines.map(l=>'<li>'+l+'</li>').join('')+'</ul>';
       }
     });
   </script>
 </body>
-  </html>
+</html>  
