@@ -4,6 +4,11 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
+// --- Stripe setup ---
+const Stripe = require('stripe');
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+// ---------------------
+
 const app = express();
 app.use(cors());
 app.use(express.json());
