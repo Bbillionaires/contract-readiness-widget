@@ -1,32 +1,46 @@
-// server.js
+// server.js - clean version
+
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-
-// --- Stripe setup ---
 const Stripe = require('stripe');
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
-// ---------------------
+
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
 
 const app = express();
+const PORT = process.env.PORT || 10000;
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 10000;
+// --- License file loading + saving ---
 
-// Load licenses
+const licensesPath = path.join(__dirname, 'licenses.json');
 let licenses = {};
+
 try {
-  const licensesPath = path.join(__dirname, 'licenses.json');
   const raw = fs.readFileSync(licensesPath, 'utf8');
   licenses = JSON.parse(raw);
   console.log('Loaded licenses:', Object.keys(licenses));
 } catch (err) {
   console.error('Failed to load licenses.json:', err.message);
+  licenses = {};
 }
 
-// Helper to extract domain from Origin/Referer
+function saveLicenses() {
+  try {
+    fs.writeFileSync(licensesPath, JSON.stringify(licenses, null, 2));
+    console.log('Licenses saved.');
+  } catch (err) {
+    console.error('Failed to save licenses.json:', err.message);
+  }
+}
+
+// Helper: extract domain from Origin/Referer
 function getDomainFromOrigin(originHeader) {
   try {
     if (!originHeader) return null;
@@ -37,12 +51,12 @@ function getDomainFromOrigin(originHeader) {
   }
 }
 
-// Health check
+// --- Basic health check ---
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Contract Readiness API running' });
 });
 
-// License check endpoint
+// --- License check endpoint ---
 app.get('/license', (req, res) => {
   const key = req.query.key || '';
   const lic = licenses[key];
@@ -62,17 +76,18 @@ app.get('/license', (req, res) => {
     }
   }
 
-  return res.json({ active: true, plan: lic.plan || 'standard' });
+  return res.json({
+    active: true,
+    plan: lic.plan || 'standard'
+  });
 });
 
-// Usage log endpoint
-// --- /log endpoint with Stripe metered billing ---
+// --- Usage log endpoint + optional Stripe metered billing ---
 app.post('/log', async (req, res) => {
   const { license, score, letter, insuranceStatus } = req.body || {};
   const origin = req.headers.origin || req.headers.referer || '';
   const reqDomain = getDomainFromOrigin(origin);
 
-  // Log submission locally
   const logLine = JSON.stringify({
     ts: new Date().toISOString(),
     license,
@@ -82,11 +97,11 @@ app.post('/log', async (req, res) => {
     domain: reqDomain
   }) + '\n';
 
-  fs.appendFile(path.join(__dirname, 'usage.log'), logLine, (err) => {
+  fs.appendFile(path.join(__dirname, 'usage.log'), logLine, err => {
     if (err) console.error('Failed to write usage log:', err.message);
   });
 
-  // --- Stripe metered billing (10¢ per submission) ---
+  // Stripe metered billing (optional)
   try {
     const lic = licenses[license];
     if (stripe && lic && lic.stripe_subscription_item_id) {
@@ -103,44 +118,79 @@ app.post('/log', async (req, res) => {
   } catch (err) {
     console.error('Stripe usage error:', err.message);
   }
-  // ---------------------------------------------------
 
   res.json({ ok: true });
 });
 
-  fs.appendFile(path.join(__dirname, 'usage.log'), logLine, (err) => {
-    if (err) console.error('Failed to write usage log:', err.message);
+// --- Admin auth + routes ---
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+
+function requireAdmin(req, res, next) {
+  const token = req.headers['x-admin-secret'] || req.query.admin;
+  if (!ADMIN_SECRET || token !== ADMIN_SECRET) {
+    return res.status(403).json({ ok: false, error: 'forbidden' });
+  }
+  next();
+}
+
+// List licenses with search + metrics
+app.get('/admin/licenses', requireAdmin, (req, res) => {
+  const search = (req.query.search || '').toLowerCase();
+  const items = Object.entries(licenses).map(([key, lic]) => ({
+    key,
+    ...lic
+  }));
+
+  let filtered = items;
+  if (search) {
+    filtered = items.filter(item =>
+      (item.first_name || '').toLowerCase().includes(search) ||
+      (item.last_name || '').toLowerCase().includes(search) ||
+      (item.email || '').toLowerCase().includes(search) ||
+      (item.company || '').toLowerCase().includes(search) ||
+      item.key.toLowerCase().includes(search)
+    );
+  }
+
+  filtered.sort((a, b) => {
+    const ta = new Date(a.created_at || 0).getTime();
+    const tb = new Date(b.created_at || 0).getTime();
+    return tb - ta; // newest first
   });
 
-  // Stripe metered billing could go here (disabled for now)
-
-  res.json({ ok: true });
+  res.json({ ok: true, licenses: filtered });
 });
 
-// Look up license by email or Stripe session_id
+// Toggle active/inactive
+app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
+  const key = req.params.key;
+  const lic = licenses[key];
+  if (!lic) {
+    return res.status(404).json({ ok: false, error: 'not_found' });
+  }
+
+  const body = req.body || {};
+  if (typeof body.active === 'boolean') {
+    lic.active = body.active;
+  }
+
+  saveLicenses();
+  res.json({ ok: true, license: { key, ...lic } });
+});
+
+// --- Lookup endpoint (for thank-you page) ---
 app.get('/lookup', async (req, res) => {
   try {
     let email = (req.query.email || '').trim().toLowerCase();
     const sessionId = (req.query.session_id || '').trim();
 
-    // If no email but we have a Stripe session, fetch email from Stripe
-    if (!email && sessionId && stripe) {
-      try {
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-        const detailsEmail = session.customer_details && session.customer_details.email;
-        if (detailsEmail) {
-          email = detailsEmail.trim().toLowerCase();
-        }
-      } catch (err) {
-        console.error('Error retrieving Stripe session:', err.message);
-      }
-    }
-
+    // You can extend this later to fetch email from Stripe using session_id.
+    // For now we only use email if provided.
     if (!email) {
-      return res.status(400).json({ ok: false, error: 'missing_email_or_session' });
+      return res.status(400).json({ ok: false, error: 'missing_email' });
     }
 
-    // Find all licenses with this email
     const matches = Object.entries(licenses)
       .filter(([key, lic]) => (lic.email || '').toLowerCase() === email)
       .map(([key, lic]) => ({ key, ...lic }));
@@ -149,7 +199,6 @@ app.get('/lookup', async (req, res) => {
       return res.json({ ok: false, error: 'no_license_found_for_email', email });
     }
 
-    // Pick the most recent by created_at
     matches.sort((a, b) => {
       const ta = new Date(a.created_at || 0).getTime();
       const tb = new Date(b.created_at || 0).getTime();
@@ -169,60 +218,7 @@ app.get('/lookup', async (req, res) => {
   }
 });
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
-
-function requireAdmin(req, res, next) {
-  const token = req.headers['x-admin-secret'] || req.query.admin;
-  if (!ADMIN_SECRET || token !== ADMIN_SECRET) {
-    return res.status(403).json({ ok: false, error: 'forbidden' });
-  }
-  next();
-}
-
-app.get('/admin/licenses', requireAdmin, (req, res) => {
-  const search = (req.query.search || '').toLowerCase();
-  const items = Object.entries(licenses).map(([key, lic]) => ({
-    key,
-    ...lic
-  }));
-
-  let filtered = items;
-  if (search) {
-    filtered = items.filter(item =>
-      (item.first_name || '').toLowerCase().includes(search) ||
-      (item.last_name || '').toLowerCase().includes(search) ||
-      (item.email || '').toLowerCase().includes(search) ||
-      (item.company || '').toLowerCase().includes(search) ||
-      item.key.toLowerCase().includes(search)
-    );
-  }
-
-  // newest first
-  filtered.sort((a, b) => {
-    const ta = new Date(a.created_at || 0).getTime();
-    const tb = new Date(b.created_at || 0).getTime();
-    return tb - ta;
-  });
-
-  res.json({ ok: true, licenses: filtered });
-});
-
-app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
-  const key = req.params.key;
-  const lic = licenses[key];
-  if (!lic) {
-    return res.status(404).json({ ok: false, error: 'not_found' });
-  }
-
-  const body = req.body || {};
-  if (typeof body.active === 'boolean') {
-    lic.active = body.active;
-  }
-
-  saveLicenses();
-  res.json({ ok: true, license: { key, ...lic } });
-});
-
+// --- Start server ---
 app.listen(PORT, () => {
   console.log('API listening on port', PORT);
 });
