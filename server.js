@@ -1,10 +1,11 @@
-// server.js - clean version
+// server.js – full version with Stripe webhook, admin, usage metrics
 
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const Stripe = require('stripe');
+const crypto = require('crypto');
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -134,7 +135,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// List licenses with search + metrics
+// List licenses with search + sorted newest first
 app.get('/admin/licenses', requireAdmin, (req, res) => {
   const search = (req.query.search || '').toLowerCase();
   const items = Object.entries(licenses).map(([key, lic]) => ({
@@ -179,14 +180,56 @@ app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
   res.json({ ok: true, license: { key, ...lic } });
 });
 
-// --- Lookup endpoint (for thank-you page) ---
+// Usage metrics from usage.log
+app.get('/admin/usage', requireAdmin, (req, res) => {
+  const usageFile = path.join(__dirname, 'usage.log');
+
+  fs.readFile(usageFile, 'utf8', (err, data) => {
+    if (err || !data || !data.trim()) {
+      return res.json({ ok: true, total_events: 0, last_ts: null, stats: {} });
+    }
+
+    const lines = data.trim().split('\n');
+    const stats = {};
+    let lastTs = null;
+
+    lines.forEach(line => {
+      try {
+        const entry = JSON.parse(line);
+        const lic = entry.license || 'UNKNOWN';
+        const ts = entry.ts || entry.timestamp || null;
+
+        if (!stats[lic]) {
+          stats[lic] = { count: 0, last_ts: null };
+        }
+        stats[lic].count += 1;
+        if (ts) {
+          if (!stats[lic].last_ts || new Date(ts) > new Date(stats[lic].last_ts)) {
+            stats[lic].last_ts = ts;
+          }
+          if (!lastTs || new Date(ts) > new Date(lastTs)) {
+            lastTs = ts;
+          }
+        }
+      } catch (e) {
+        // ignore bad lines
+      }
+    });
+
+    res.json({
+      ok: true,
+      total_events: lines.length,
+      last_ts: lastTs,
+      stats
+    });
+  });
+});
+
+// --- Lookup endpoint (used by thank-you page, email-based) ---
 app.get('/lookup', async (req, res) => {
   try {
     let email = (req.query.email || '').trim().toLowerCase();
-    const sessionId = (req.query.session_id || '').trim();
 
-    // You can extend this later to fetch email from Stripe using session_id.
-    // For now we only use email if provided.
     if (!email) {
       return res.status(400).json({ ok: false, error: 'missing_email' });
     }
@@ -216,6 +259,58 @@ app.get('/lookup', async (req, res) => {
     console.error('Lookup error:', err.message);
     res.status(500).json({ ok: false, error: 'server_error' });
   }
+});
+
+// --- Stripe webhook: auto-create licenses on successful checkout ---
+app.post('/stripe/webhook', (req, res) => {
+  if (!stripe) {
+    // If Stripe not configured, just acknowledge
+    return res.json({ received: true, message: 'Stripe not configured' });
+  }
+
+  const event = req.body;
+
+  if (event && event.type === 'checkout.session.completed') {
+    const session = event.data && event.data.object;
+
+    if (session) {
+      const email = (session.customer_details && session.customer_details.email) || '';
+      const fullName = (session.customer_details && session.customer_details.name) || '';
+      const parts = fullName.trim().split(' ');
+      const firstName = parts[0] || '';
+      const lastName = parts.slice(1).join(' ') || '';
+
+      // Try to get domain from custom_fields (if set up in Stripe)
+      let domain = '';
+      if (Array.isArray(session.custom_fields)) {
+        const field = session.custom_fields.find(f => f.key === 'website_domain');
+        if (field && field.text && field.text.value) {
+          domain = field.text.value.trim().toLowerCase();
+        }
+      }
+
+      // Generate random license key (16 hex chars)
+      const licenseKey = crypto.randomBytes(8).toString('hex').toUpperCase();
+
+      licenses[licenseKey] = {
+        active: true,
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        company: session.client_reference_id || '',
+        allowed_domains: domain ? [domain] : [],
+        stripe_customer_id: session.customer || '',
+        stripe_subscription_item_id: '', // can be filled later
+        plan: 'standard',
+        created_at: new Date().toISOString()
+      };
+
+      saveLicenses();
+      console.log('Created license from Stripe webhook:', licenseKey, email);
+    }
+  }
+
+  res.json({ received: true });
 });
 
 // --- Start server ---
