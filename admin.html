@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>License Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 10px;
+      background: #f9fafb;
+    }
+    h2 {
+      text-align: center;
+    }
+    input, button {
+      margin: 4px 0;
+      padding: 6px;
+      font-size: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: left;
+    }
+    th {
+      background: #e5e7eb;
+    }
+    tr.inactive {
+      background: #fee2e2;
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      max-width: 300px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .status {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Contract Readiness Widget – Admin Dashboard</h2>
+  <div class="controls">
+    <label>Admin Secret:</label>
+    <input id="adminSecret" type="password" placeholder="Enter admin secret">
+    <label>Search (name, email, company, license):</label>
+    <input id="search" type="text" placeholder="Search...">
+    <button id="loadBtn">Load Licenses</button>
+  </div>
+
+  <div class="status" id="statusMsg"></div>
+
+  <table id="table" style="display:none;">
+    <thead>
+      <tr>
+        <th>License</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Company</th>
+        <th>Domains</th>
+        <th>Active</th>
+        <th>Created</th>
+        <th>Toggle</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const apiBase = 'https://contract-readiness-widget.onrender.com';
+
+    async function loadLicenses() {
+      const secret = document.getElementById('adminSecret').value.trim();
+      const search = document.getElementById('search').value.trim();
+      const statusMsg = document.getElementById('statusMsg');
+
+      statusMsg.textContent = 'Loading licenses...';
+      const res = await fetch(apiBase + '/admin/licenses?search=' + encodeURIComponent(search), {
+        headers: { 'x-admin-secret': secret }
+      });
+
+      const data = await res.json();
+      if (!data.ok) {
+        statusMsg.textContent = 'Error: ' + (data.error || 'Unable to load');
+        return;
+      }
+
+      const table = document.getElementById('table');
+      const tbody = table.querySelector('tbody');
+      tbody.innerHTML = '';
+
+      if (!data.licenses.length) {
+        statusMsg.textContent = 'No licenses found.';
+        table.style.display = 'none';
+        return;
+      }
+
+      data.licenses.forEach(lic => {
+        const tr = document.createElement('tr');
+        if (!lic.active) tr.classList.add('inactive');
+        const domains = (lic.allowed_domains || []).join(', ');
+
+        tr.innerHTML = `
+          <td>${lic.key}</td>
+          <td>${(lic.first_name || '')} ${(lic.last_name || '')}</td>
+          <td>${lic.email || ''}</td>
+          <td>${lic.company || ''}</td>
+          <td>${domains}</td>
+          <td>${lic.active ? 'Yes' : 'No'}</td>
+          <td>${lic.created_at || ''}</td>
+          <td><button data-key="${lic.key}" data-active="${lic.active ? '1':'0'}">
+            ${lic.active ? 'Deactivate' : 'Activate'}
+          </button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      table.style.display = 'table';
+      statusMsg.textContent = `Loaded ${data.licenses.length} license(s).`;
+
+      tbody.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const key = btn.getAttribute('data-key');
+          const active = btn.getAttribute('data-active') === '1';
+          const newActive = !active;
+
+          const res = await fetch(apiBase + '/admin/licenses/' + encodeURIComponent(key), {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-admin-secret': secret
+            },
+            body: JSON.stringify({ active: newActive })
+          });
+
+          const updated = await res.json();
+          if (!updated.ok) {
+            alert('Error updating license: ' + (updated.error || 'unknown'));
+          } else {
+            loadLicenses();
+          }
+        });
+      });
+    }
+
+    document.getElementById('loadBtn').addEventListener('click', loadLicenses);
+  </script>
+</body>
+</html>
