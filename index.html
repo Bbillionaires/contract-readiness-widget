@@ -225,6 +225,9 @@
     const accentColor = params.get('color') || '#2563eb';
     const redirectUrl = params.get('redirect');
 
+    // 🔴 CHANGE THIS to your actual Render URL
+    const apiBase = 'https://YOUR-RENDER-URL.onrender.com';
+
     // Apply theme & accent
     document.documentElement.style.setProperty('--accent', accentColor);
     if (theme === 'dark') {
@@ -262,7 +265,7 @@
       return 'F';
     }
 
-    // 1) LICENSE CHECK HOOK
+    // 1) LICENSE CHECK HOOK (LIVE MODE)
     async function checkLicense() {
       if (!licenseKey) {
         licenseErrorEl.textContent = 'License key missing in iframe URL.';
@@ -272,8 +275,7 @@
       }
 
       try {
-        // Replace this URL with your real API endpoint
-        const res = await fetch('https://api.yourdomain.com/license?key=' + encodeURIComponent(licenseKey));
+        const res = await fetch(apiBase + '/license?key=' + encodeURIComponent(licenseKey));
         if (!res.ok) throw new Error('Bad response');
         const data = await res.json();
 
@@ -285,10 +287,10 @@
         }
 
         // License OK
+        licenseErrorEl.classList.add('hidden');
         submitBtn.disabled = false;
         return true;
       } catch (e) {
-        // If the API is down, you can choose to either block or allow
         licenseErrorEl.textContent = 'Unable to verify license. Please try again later.';
         licenseErrorEl.classList.remove('hidden');
         submitBtn.disabled = true;
@@ -350,7 +352,7 @@
 
       // 3) LOG USAGE TO YOUR API FOR BILLING (10¢ / query)
       try {
-        await fetch('https://api.yourdomain.com/log', {
+        await fetch(apiBase + '/log', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
@@ -369,10 +371,8 @@
       if (redirectUrl) {
         setTimeout(() => {
           try {
-            // try to redirect the top window (parent site)
             window.top.location.href = redirectUrl;
           } catch (e) {
-            // fallback: redirect inside iframe
             window.location.href = redirectUrl;
           }
         }, 2000);
