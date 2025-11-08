@@ -4,5 +4,11 @@
     "allowed_domains": ["bbillionaires.github.io"],
     "stripe_subscription_item_id": "",
     "plan": "standard"
+  },
+  "JAXBUILDERS": {
+    "active": true,
+    "allowed_domains": ["jaxbuilders.org", "www.jaxbuilders.org"],
+    "stripe_subscription_item_id": "",
+    "plan": "standard"
   }
 }
