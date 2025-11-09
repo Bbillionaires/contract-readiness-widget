@@ -1,4 +1,4 @@
-      <!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -121,6 +121,7 @@
           <th>Domains</th>
           <th>Plan</th>
           <th>Active</th>
+          <th>Free Usage</th>
           <th>Created</th>
           <th>Actions</th>
         </tr>
@@ -145,6 +146,9 @@
       </label>
       <label>
         <input type="checkbox" id="editActive"> Active
+      </label>
+      <label>
+        <input type="checkbox" id="editFreeUsage"> Free usage (no per-use billing)
       </label>
       <button id="saveEditBtn">Save Changes</button>
     </div>
@@ -235,6 +239,10 @@
         tdActive.appendChild(span);
         tr.appendChild(tdActive);
 
+        const tdFree = document.createElement('td');
+        tdFree.textContent = lic.free_usage ? 'Yes' : 'No';
+        tr.appendChild(tdFree);
+
         const tdCreated = document.createElement('td');
         tdCreated.textContent = lic.created_at || '';
         tr.appendChild(tdCreated);
@@ -260,6 +268,7 @@
         ? lic.allowed_domains.join(', ')
         : '';
       document.getElementById('editActive').checked = !!lic.active;
+      document.getElementById('editFreeUsage').checked = !!lic.free_usage;
 
       document.getElementById('editPanel').style.display = 'block';
     }
@@ -274,6 +283,7 @@
       const notifyEmail = document.getElementById('editNotifyEmail').value.trim();
       const domainsStr = document.getElementById('editDomains').value.trim();
       const active = document.getElementById('editActive').checked;
+      const freeUsage = document.getElementById('editFreeUsage').checked;
 
       const allowed_domains = domainsStr
         ? domainsStr.split(',').map(d => d.trim()).filter(Boolean)
@@ -289,7 +299,8 @@
               company,
               notify_email: notifyEmail,
               allowed_domains,
-              active
+              active,
+              free_usage: freeUsage
             })
           }
         );
@@ -324,4 +335,4 @@
     window.addEventListener('load', promptAdminSecret);
   </script>
 </body>
-</html>
+</html>                     
