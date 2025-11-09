@@ -6,210 +6,166 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
       background: #f9fafb;
       color: #111827;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      text-align: center;
+      margin: 0;
+      padding: 0;
     }
-    .card {
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
       background: white;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 520px;
-      width: 90%;
-      box-sizing: border-box;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-top: 25px;
     }
     h1 {
-      font-size: 1.6rem;
-      margin-bottom: 0.5rem;
+      text-align: center;
+      color: #1e3a8a;
+      margin-bottom: 10px;
     }
     p {
-      font-size: 0.95rem;
-      color: #374151;
-      margin-bottom: 0.5rem;
+      font-size: 14px;
+      line-height: 1.4;
+      margin-bottom: 8px;
     }
-    .highlight {
-      color: #2563eb;
-      font-weight: 600;
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
     }
-    input, button, textarea {
+    input[type="email"] {
       width: 100%;
-      box-sizing: border-box;
-      margin: 6px 0;
       padding: 8px;
-      font-size: 0.9rem;
+      margin-top: 4px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
     }
     button {
       background: #2563eb;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-weight: 600;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 14px;
       cursor: pointer;
+      margin-top: 8px;
     }
     button:hover {
       background: #1e40af;
     }
-    textarea {
-      font-family: monospace;
-      height: 100px;
+    #status {
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    #licenseBox {
+      margin-top: 16px;
+      background: #f3f4f6;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    code {
+      background: #e5e7eb;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 12px;
     }
     .small {
-      font-size: 0.8rem;
+      font-size: 12px;
       color: #6b7280;
-      margin-top: 8px;
-    }
-    .status {
-      font-size: 0.85rem;
-      margin-top: 6px;
-    }
-    .status.error {
-      color: #b91c1c;
-    }
-    .status.ok {
-      color: #15803d;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Thank You for Your Purchase!</h1>
-    <p>Your <span class="highlight">Contract Readiness Widget</span> license is being created.</p>
-    <p>We’ll load your license details automatically. If they don’t appear in a few seconds, enter your email below and tap <strong>Find My License</strong>.</p>
+  <div class="container">
+    <h1>Thank You for Your Purchase</h1>
+    <p>Your payment was successful and your license has been created.</p>
+    <p><strong>Step 1:</strong> Enter the same email you used at checkout to find your license key.</p>
 
-    <div id="autoStatus" class="status"></div>
-
-    <label style="margin-top:10px;display:block;text-align:left;font-size:0.85rem;">
-      Email used at checkout:
-      <input id="emailInput" type="email" placeholder="you@example.com">
+    <label>
+      Checkout Email
+      <input type="email" id="emailInput" placeholder="you@example.com">
     </label>
     <button id="lookupBtn">Find My License</button>
 
-    <div id="licenseBlock" style="margin-top:14px; display:none; text-align:left;">
-      <p class="status ok" id="licenseStatus"></p>
-      <p><strong>License Key:</strong> <span id="licenseKey"></span></p>
-      <p><strong>Embed Code:</strong></p>
-      <textarea id="embedCode" readonly></textarea>
-      <button id="copyBtn">Copy Embed Code</button>
-      <p class="small">Paste this iframe code into your website where you want the Contract Readiness Widget to appear.</p>
-    </div>
+    <div id="status"></div>
 
-    <p class="small">
-      If you need help, contact support with your name and email from checkout.
-    </p>
+    <div id="licenseBox" style="display:none;">
+      <p><strong>Your License Key:</strong> <code id="licenseKey"></code></p>
+      <p><strong>Registered Name:</strong> <span id="licenseName"></span></p>
+      <p><strong>Company:</strong> <span id="licenseCompany"></span></p>
+      <p><strong>Allowed Domains:</strong> <span id="licenseDomains"></span></p>
+
+      <p style="margin-top:10px;"><strong>How to use your widget:</strong></p>
+      <p class="small">
+        This is the URL you can use to embed or link your Contract Readiness Calculator. It includes your license key.
+      </p>
+      <p>
+        <code id="widgetUrl"></code>
+      </p>
+      <p class="small">
+        Example (as a link on your site):<br>
+        <code>&lt;a href="https://bbillionaires.github.io/contract-readiness-widget/?license=YOURKEY" target="_blank"&gt;Open Contract Readiness Calculator&lt;/a&gt;</code>
+      </p>
+      <p class="small">
+        Example (as an iframe on your site):<br>
+        <code>&lt;iframe src="https://bbillionaires.github.io/contract-readiness-widget/?license=YOURKEY" width="100%" height="800" frameborder="0"&gt;&lt;/iframe&gt;</code>
+      </p>
+    </div>
   </div>
 
   <script>
     const apiBase = 'https://contract-readiness-widget.onrender.com';
 
-    function getQueryParam(name) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name) || '';
-    }
+    document.getElementById('lookupBtn').addEventListener('click', async () => {
+      const email = document.getElementById('emailInput').value.trim();
+      const statusEl = document.getElementById('status');
+      const boxEl = document.getElementById('licenseBox');
 
-    async function lookupLicense(opts = {}) {
-      const emailInput = document.getElementById('emailInput');
-      const autoStatus = document.getElementById('autoStatus');
-      const licenseBlock = document.getElementById('licenseBlock');
-      const licenseStatus = document.getElementById('licenseStatus');
-      const licenseKeyEl = document.getElementById('licenseKey');
-      const embedCodeEl = document.getElementById('embedCode');
-
-      let email = (opts.email || emailInput.value || '').trim();
-      const sessionId = (opts.session_id || getQueryParam('session_id')).trim();
-
-      autoStatus.textContent = 'Looking up your license...';
-      autoStatus.className = 'status';
-
-      const params = new URLSearchParams();
-      if (email) params.set('email', email);
-      if (!email && sessionId) params.set('session_id', sessionId);
-
-      if (!email && !sessionId) {
-        autoStatus.textContent = 'Enter the email you used at checkout, then tap Find My License.';
-        autoStatus.className = 'status error';
+      if (!email) {
+        statusEl.textContent = 'Please enter the email you used at checkout.';
+        boxEl.style.display = 'none';
         return;
       }
 
-      if (email && !emailInput.value) {
-        emailInput.value = email;
-      }
+      statusEl.textContent = 'Looking up your license...';
+      boxEl.style.display = 'none';
 
       try {
+        const params = new URLSearchParams({ email });
         const res = await fetch(apiBase + '/lookup?' + params.toString());
         const data = await res.json();
 
         if (!data.ok) {
-          autoStatus.textContent = 'We could not find a license yet. If you just paid, wait 10–20 seconds and try again.';
-          autoStatus.className = 'status error';
-          licenseBlock.style.display = 'none';
+          statusEl.textContent = 'No license found for that email. Double-check the email you used at checkout.';
           return;
         }
 
         const lic = data.license || {};
         const key = data.license_key;
 
-        autoStatus.textContent = 'License found!';
-        autoStatus.className = 'status ok';
+        document.getElementById('licenseKey').textContent = key;
+        document.getElementById('licenseName').textContent =
+          (lic.first_name || '') + ' ' + (lic.last_name || '');
+        document.getElementById('licenseCompany').textContent = lic.company || '';
 
-        const firstName = lic.first_name || '';
-        const lastName = lic.last_name || '';
-        const displayName = (firstName + ' ' + lastName).trim();
+        const domains = Array.isArray(lic.allowed_domains) ? lic.allowed_domains : [];
+        document.getElementById('licenseDomains').textContent =
+          domains.length ? domains.join(', ') : 'Not limited (or not set)';
 
-        licenseStatus.textContent = displayName
-          ? `Welcome, ${displayName}! Your license is active.`
-          : 'Your license is active.';
+        const widgetUrl = 'https://bbillionaires.github.io/contract-readiness-widget/?license=' + encodeURIComponent(key);
+        document.getElementById('widgetUrl').textContent = widgetUrl;
 
-        licenseKeyEl.textContent = key || '(unknown key)';
-
-        // Build basic embed code for them to paste
-        const licenseParam = encodeURIComponent(key);
-        const iframeSrc = `https://bbillionaires.github.io/contract-readiness-widget/index.html?license=${licenseParam}`;
-        const iframeCode =
-`<iframe
-  src="${iframeSrc}"
-  width="100%"
-  height="650"
-  frameborder="0"
-  style="border:0;">
-</iframe>`;
-
-        embedCodeEl.value = iframeCode;
-        licenseBlock.style.display = 'block';
+        statusEl.textContent = 'License found. Copy your key and widget URL below.';
+        boxEl.style.display = 'block';
       } catch (err) {
         console.error(err);
-        autoStatus.textContent = 'Error contacting license server. Please try again in a moment.';
-        autoStatus.className = 'status error';
-        licenseBlock.style.display = 'none';
-      }
-    }
-
-    document.getElementById('lookupBtn').addEventListener('click', () => {
-      const email = document.getElementById('emailInput').value.trim();
-      lookupLicense({ email });
-    });
-
-    document.getElementById('copyBtn').addEventListener('click', () => {
-      const embedCodeEl = document.getElementById('embedCode');
-      embedCodeEl.select();
-      document.execCommand('copy');
-      alert('Embed code copied to clipboard.');
-    });
-
-    // Auto-lookup on load using session_id or email in URL
-    window.addEventListener('load', () => {
-      const emailFromUrl = getQueryParam('email');
-      const sessionId = getQueryParam('session_id');
-      if (emailFromUrl || sessionId) {
-        lookupLicense({ email: emailFromUrl, session_id: sessionId });
+        statusEl.textContent = 'Error looking up your license. Please try again later.';
+        boxEl.style.display = 'none';
       }
     });
   </script>
