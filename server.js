@@ -5,7 +5,7 @@
 // - Full submission logging
 // - Per-license email notifications
 // - Stripe webhook for auto-license creation
-// - Admin endpoints for licenses & usage
+// - Admin endpoints for licenses, usage, submissions
 
 const express = require('express');
 const cors = require('cors');
@@ -400,6 +400,37 @@ app.get('/admin/usage', requireAdmin, (req, res) => {
       last_ts: lastTs,
       stats
     });
+  });
+});
+
+// Submissions viewer endpoint
+app.get('/admin/submissions', requireAdmin, (req, res) => {
+  fs.readFile(submissionsPath, 'utf8', (err, data) => {
+    if (err || !data || !data.trim()) {
+      return res.json({ ok: true, submissions: [] });
+    }
+
+    const lines = data.trim().split('\n');
+    const max = 200; // last 200 submissions
+    const slice = lines.slice(-max);
+    const submissions = [];
+
+    slice.forEach(line => {
+      try {
+        const entry = JSON.parse(line);
+        submissions.push(entry);
+      } catch (e) {
+        // ignore bad lines
+      }
+    });
+
+    submissions.sort((a, b) => {
+      const ta = new Date(a.ts || 0).getTime();
+      const tb = new Date(b.ts || 0).getTime();
+      return tb - ta; // newest first
+    });
+
+    res.json({ ok: true, submissions });
   });
 });
 
