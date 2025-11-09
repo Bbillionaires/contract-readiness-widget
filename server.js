@@ -1,4 +1,5 @@
-// server.js – full version with logging, Stripe webhook, admin, usage metrics
+// server.js – API for Contract Readiness Widget
+// Includes: license check, usage log, admin APIs, Stripe webhook, full submission log + email
 
 const express = require('express');
 const cors = require('cors');
@@ -6,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const Stripe = require('stripe');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -13,6 +15,34 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+// Email config (optional)
+const OWNER_NOTIFICATION_EMAIL = process.env.OWNER_NOTIFICATION_EMAIL || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || OWNER_NOTIFICATION_EMAIL || '';
+let emailEnabled = false;
+let transporter = null;
+
+if (
+  process.env.SMTP_HOST &&
+  process.env.SMTP_USER &&
+  process.env.SMTP_PASS &&
+  OWNER_NOTIFICATION_EMAIL &&
+  EMAIL_FROM
+) {
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    }
+  });
+  emailEnabled = true;
+  console.log('Email notifications enabled.');
+} else {
+  console.log('Email notifications NOT fully configured. Submissions will only be logged.');
+}
 
 // Log all incoming requests
 app.use((req, res, next) => {
@@ -27,6 +57,9 @@ app.use(express.json());
 // --- License file loading + saving ---
 
 const licensesPath = path.join(__dirname, 'licenses.json');
+const submissionsPath = path.join(__dirname, 'submissions.log');
+const usagePath = path.join(__dirname, 'usage.log');
+
 let licenses = {};
 
 try {
@@ -89,7 +122,7 @@ app.get('/license', (req, res) => {
   });
 });
 
-// --- Usage log endpoint (now tracks basic + advanced grades) ---
+// --- Usage log endpoint (basic/advanced scores) ---
 app.post('/log', async (req, res) => {
   const {
     license,
@@ -114,11 +147,11 @@ app.post('/log', async (req, res) => {
     domain: reqDomain
   }) + '\n';
 
-  fs.appendFile(path.join(__dirname, 'usage.log'), logLine, err => {
+  fs.appendFile(usagePath, logLine, err => {
     if (err) console.error('Failed to write usage log:', err.message);
   });
 
-  // Optional Stripe metered billing (per-use)
+  // Optional Stripe metered usage
   try {
     const lic = licenses[license];
     if (stripe && lic && lic.stripe_subscription_item_id) {
@@ -137,6 +170,100 @@ app.post('/log', async (req, res) => {
   }
 
   res.json({ ok: true });
+});
+
+// --- Full submission storage + optional email ---
+app.post('/submit-form', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const origin = req.headers.origin || req.headers.referer || '';
+    const reqDomain = getDomainFromOrigin(origin);
+
+    const record = {
+      ts: new Date().toISOString(),
+      license: body.license || '',
+      contact: body.contact || {},
+      core_answers: body.core_answers || {},
+      advanced_answers: body.advanced_answers || {},
+      scores: body.scores || {},
+      domain: reqDomain
+    };
+
+    fs.appendFileSync(submissionsPath, JSON.stringify(record) + '\n');
+
+    let emailedOwner = false;
+    let emailedUser = false;
+
+    if (emailEnabled) {
+      const contactEmail = (record.contact.email || '').trim();
+      const contactName = record.contact.contact_name || record.contact.name || '';
+      const summaryLines = [];
+
+      summaryLines.push('New Contract Readiness Submission');
+      summaryLines.push('--------------------------------');
+      summaryLines.push(`Timestamp: ${record.ts}`);
+      summaryLines.push(`Domain: ${record.domain || ''}`);
+      summaryLines.push(`License: ${record.license}`);
+      summaryLines.push('');
+      summaryLines.push(`Company: ${record.contact.company_name || ''}`);
+      summaryLines.push(`Contact: ${contactName}`);
+      summaryLines.push(`Email: ${contactEmail}`);
+      summaryLines.push(`Phone: ${record.contact.phone || ''}`);
+      summaryLines.push(`Website: ${record.contact.website || ''}`);
+      summaryLines.push('');
+      summaryLines.push(
+        `Basic Score: ${record.scores.basic_score ?? ''} (${record.scores.basic_letter || ''})`
+      );
+      summaryLines.push(
+        `Advanced Score: ${record.scores.advanced_score ?? 'N/A'} (${record.scores.advanced_letter || ''})`
+      );
+      summaryLines.push('');
+      summaryLines.push('Core Answers:');
+      Object.entries(record.core_answers).forEach(([k, v]) => {
+        summaryLines.push(`- ${k}: ${v}`);
+      });
+      summaryLines.push('');
+      summaryLines.push('Advanced Answers:');
+      Object.entries(record.advanced_answers).forEach(([k, v]) => {
+        summaryLines.push(`- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`);
+      });
+
+      const summaryText = summaryLines.join('\n');
+
+      // Email to owner
+      try {
+        await transporter.sendMail({
+          from: EMAIL_FROM,
+          to: OWNER_NOTIFICATION_EMAIL,
+          subject: 'New Contract Readiness Submission',
+          text: summaryText
+        });
+        emailedOwner = true;
+      } catch (err) {
+        console.error('Owner email error:', err.message);
+      }
+
+      // Email to user (if email provided)
+      if (contactEmail) {
+        try {
+          await transporter.sendMail({
+            from: EMAIL_FROM,
+            to: contactEmail,
+            subject: 'Your Contract Readiness Results',
+            text: summaryText
+          });
+          emailedUser = true;
+        } catch (err) {
+          console.error('User email error:', err.message);
+        }
+      }
+    }
+
+    res.json({ ok: true, emailed_owner: emailedOwner, emailed_user: emailedUser });
+  } catch (err) {
+    console.error('submit-form error:', err.message);
+    res.status(500).json({ ok: false, error: 'server_error' });
+  }
 });
 
 // --- Admin auth + routes ---
@@ -198,9 +325,7 @@ app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
 
 // Usage metrics from usage.log
 app.get('/admin/usage', requireAdmin, (req, res) => {
-  const usageFile = path.join(__dirname, 'usage.log');
-
-  fs.readFile(usageFile, 'utf8', (err, data) => {
+  fs.readFile(usagePath, 'utf8', (err, data) => {
     if (err || !data || !data.trim()) {
       return res.json({ ok: true, total_events: 0, last_ts: null, stats: {} });
     }
