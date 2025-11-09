@@ -157,7 +157,6 @@
     const formEl = document.getElementById('readinessForm');
     const resultEl = document.getElementById('result');
 
-    // Toggle Advanced block
     const advToggleBtn = document.getElementById('toggleAdvanced');
     const advBlock = document.getElementById('advancedBlock');
     advToggleBtn.addEventListener('click', () => {
@@ -203,7 +202,6 @@
       const insuranceVal = (document.querySelector('input[name="insurance"]:checked') || {}).value;
       const insuranceStatus = insuranceVal === 'yes' ? 'Insured' : 'Not insured or not selected';
 
-      // Start building result HTML with BASIC grade
       resultEl.classList.remove('hidden');
       resultEl.innerHTML =
         '<p><strong>Basic Readiness Score (5 core items):</strong> ' +
@@ -212,10 +210,12 @@
         '<p class="tag">The basic grade is based on the 5 core questions only.</p>';
 
       // ---- ADVANCED GRADE (core + advanced, only if advanced answered) ----
-
       const advancedScores = [];
+      let anyAdvancedAnswered = false;
+      let advPct = null;
+      let advLetter = null;
 
-      // Include the 5 core questions in the advanced grade as well (yes = 1, no = 0)
+      // include core in advanced
       coreFields.forEach(f => {
         const el = document.querySelector('input[name="' + f + '"]:checked');
         if (el) {
@@ -223,17 +223,14 @@
         }
       });
 
-      // Track if ANY advanced question was answered
-      let anyAdvancedAnswered = false;
-
-      // Q6 Capability statement
+      // Q6 capability
       const capabilityEl = document.querySelector('input[name="capability"]:checked');
       if (capabilityEl) {
         anyAdvancedAnswered = true;
         advancedScores.push(capabilityEl.value === 'yes' ? 1 : 0);
       }
 
-      // Q7 Certifications
+      // Q7 certs
       const certInputs = Array.from(document.querySelectorAll('input[name="certs"]:checked'));
       if (certInputs.length > 0) {
         anyAdvancedAnswered = true;
@@ -244,28 +241,28 @@
         }
       }
 
-      // Q8 Bonding capacity
+      // Q8 bonding
       const bondingEl = document.querySelector('input[name="bonding"]:checked');
       if (bondingEl) {
         anyAdvancedAnswered = true;
         advancedScores.push(bondingEl.value === 'none' ? 0 : 1);
       }
 
-      // Q9 Safety program
+      // Q9 safety
       const safetyEl = document.querySelector('input[name="safety"]:checked');
       if (safetyEl) {
         anyAdvancedAnswered = true;
         advancedScores.push(safetyEl.value === 'yes' ? 1 : 0);
       }
 
-      // Q10 Government / public past performance
+      // Q10 govpast
       const govpastEl = document.querySelector('input[name="govpast"]:checked');
       if (govpastEl) {
         anyAdvancedAnswered = true;
         advancedScores.push(govpastEl.value === 'none' ? 0 : 1);
       }
 
-      // Q11 Network
+      // Q11 network
       const networkEl = document.querySelector('input[name="network"]:checked');
       if (networkEl) {
         anyAdvancedAnswered = true;
@@ -274,8 +271,8 @@
 
       if (anyAdvancedAnswered && advancedScores.length > 0) {
         const sum = advancedScores.reduce((a, b) => a + b, 0);
-        const advPct = Math.round((sum / advancedScores.length) * 100);
-        const advLetter = gradeFromPct(advPct);
+        advPct = Math.round((sum / advancedScores.length) * 100);
+        advLetter = gradeFromPct(advPct);
 
         resultEl.innerHTML +=
           '<hr><p><strong>Advanced Readiness Score (core + advanced):</strong> ' +
@@ -286,7 +283,7 @@
           '<hr><p><strong>Advanced Readiness Score:</strong> Not calculated (no advanced questions answered).</p>';
       }
 
-      // ---- Advanced checklist (for explanation, not grading) ----
+      // ---- Advanced checklist ----
       const advLines = [];
 
       const capability = (document.querySelector('input[name="capability"]:checked') || {}).value;
@@ -298,7 +295,6 @@
         advLines.push('✔ Certifications: ' + certValues.join(', '));
       } else if (certValues.includes('none')) {
         advLines.push('✖ Certifications: None in place');
-
       }
 
       const bonding = (document.querySelector('input[name="bonding"]:checked') || {}).value;
@@ -327,6 +323,27 @@
           '<p><strong>Advanced Readiness Checklist:</strong></p><ul>' +
           advLines.map(l => '<li>' + l + '</li>').join('') +
           '</ul>';
+      }
+
+      // ---- Send log to backend (/log) ----
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const licenseKey = params.get('license') || '';
+
+        fetch('https://contract-readiness-widget.onrender.com/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            license: licenseKey,
+            basic_score: basicPct,
+            basic_letter: basicLetter,
+            advanced_score: advPct,
+            advanced_letter: advLetter,
+            insuranceStatus
+          })
+        }).catch(() => {});
+      } catch (e) {
+        // ignore logging errors on the frontend
       }
     });
   </script>
