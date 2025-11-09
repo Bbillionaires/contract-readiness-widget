@@ -37,6 +37,22 @@
       font-weight: bold;
       color: #111827;
     }
+    label {
+      display: block;
+      margin-bottom: 4px;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="url"] {
+      width: 100%;
+      padding: 6px;
+      margin-top: 2px;
+      margin-bottom: 6px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+    }
     button, input[type="submit"] {
       background: #2563eb;
       color: white;
@@ -45,6 +61,7 @@
       padding: 10px 16px;
       font-size: 15px;
       cursor: pointer;
+      margin-top: 4px;
     }
     button:hover, input[type="submit"]:hover {
       background: #1e40af;
@@ -58,6 +75,10 @@
     }
     ul { margin: 8px 0 0 20px; }
     .tag { font-size: 0.9em; color: #555; }
+    #submitStatus {
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
@@ -65,40 +86,65 @@
     <h1>Contract Readiness Calculator</h1>
     <form id="readinessForm">
 
+      <!-- CONTACT INFO BLOCK -->
+      <fieldset>
+        <legend>Contact Information</legend>
+        <label>
+          Company Name
+          <input type="text" id="company_name" name="company_name" placeholder="Your company name">
+        </label>
+        <label>
+          Contact Name
+          <input type="text" id="contact_name" name="contact_name" placeholder="Your name">
+        </label>
+        <label>
+          Email (for results)
+          <input type="email" id="contact_email" name="contact_email" placeholder="you@example.com">
+        </label>
+        <label>
+          Phone
+          <input type="tel" id="phone" name="phone" placeholder="Optional">
+        </label>
+        <label>
+          Website
+          <input type="url" id="website" name="website" placeholder="https://yourcompany.com">
+        </label>
+      </fieldset>
+
       <!-- CORE 5 QUESTIONS -->
 
       <fieldset>
         <legend>1. Insurance Coverage</legend>
         <p>Do you have active liability insurance coverage?</p>
-        <label><input type="radio" name="insurance" value="yes"> Yes</label><br>
+        <label><input type="radio" name="insurance" value="yes"> Yes</label>
         <label><input type="radio" name="insurance" value="no"> No</label>
       </fieldset>
 
       <fieldset>
         <legend>2. Bonding Capacity (Basic)</legend>
         <p>Do you currently have a performance or payment bond?</p>
-        <label><input type="radio" name="bond" value="yes"> Yes</label><br>
+        <label><input type="radio" name="bond" value="yes"> Yes</label>
         <label><input type="radio" name="bond" value="no"> No</label>
       </fieldset>
 
       <fieldset>
         <legend>3. Equipment</legend>
         <p>Do you have the equipment required for your trade?</p>
-        <label><input type="radio" name="equipment" value="yes"> Yes</label><br>
+        <label><input type="radio" name="equipment" value="yes"> Yes</label>
         <label><input type="radio" name="equipment" value="no"> No</label>
       </fieldset>
 
       <fieldset>
         <legend>4. Financial Documents</legend>
         <p>Do you have at least 2 years of tax returns or financial statements?</p>
-        <label><input type="radio" name="financials" value="yes"> Yes</label><br>
+        <label><input type="radio" name="financials" value="yes"> Yes</label>
         <label><input type="radio" name="financials" value="no"> No</label>
       </fieldset>
 
       <fieldset>
         <legend>5. Experience</legend>
         <p>Do you have prior projects or references in similar work?</p>
-        <label><input type="radio" name="experience" value="yes"> Yes</label><br>
+        <label><input type="radio" name="experience" value="yes"> Yes</label>
         <label><input type="radio" name="experience" value="no"> No</label>
       </fieldset>
 
@@ -127,119 +173,125 @@
 
           <!-- 8. Bonding Capacity (Detailed) -->
           <p style="margin-top:8px;"><strong>8. Maximum Bonding Capacity</strong></p>
-          <label><input type="radio" name="bonding" value="none"> No bonding in place</label><br>
-          <label><input type="radio" name="bonding" value="100k"> Up to $100k</label><br>
-          <label><input type="radio" name="bonding" value="500k"> $100k–$500k</label><br>
+          <label><input type="radio" name="bonding" value="none"> No bonding in place</label>
+          <label><input type="radio" name="bonding" value="100k"> Up to $100k</label>
+          <label><input type="radio" name="bonding" value="500k"> $100k–$500k</label>
           <label><input type="radio" name="bonding" value="500kplus"> $500k+ capacity</label>
 
           <!-- 9. Safety Program -->
           <p style="margin-top:8px;"><strong>9. Safety Program</strong></p>
-          <label><input type="radio" name="safety" value="yes"> Formal safety program + OSHA logs</label><br>
-          <label><input type="radio" name="safety" value="partial"> Partially documented</label><br>
+          <label><input type="radio" name="safety" value="yes"> Formal safety program + OSHA logs</label>
+          <label><input type="radio" name="safety" value="partial"> Partially documented</label>
           <label><input type="radio" name="safety" value="no"> No formal safety program</label>
 
           <!-- 10. Government / Public Past Performance -->
           <p style="margin-top:8px;"><strong>10. Government / Public Past Performance</strong></p>
-          <label><input type="radio" name="govpast" value="none"> None</label><br>
-          <label><input type="radio" name="govpast" value="1-2"> 1–2 projects</label><br>
+          <label><input type="radio" name="govpast" value="none"> None</label>
+          <label><input type="radio" name="govpast" value="1-2"> 1–2 projects</label>
           <label><input type="radio" name="govpast" value="3+"> 3+ projects with references</label>
 
           <!-- 11. Subcontractor & Supplier Network -->
           <p style="margin-top:8px;"><strong>11. Subcontractor & Supplier Network</strong></p>
-          <label><input type="radio" name="network" value="yes"> Documented subs/suppliers</label><br>
-          <label><input type="radio" name="network" value="partial"> Some relationships, not fully documented</label><br>
+          <label><input type="radio" name="network" value="yes"> Documented subs/suppliers</label>
+          <label><input type="radio" name="network" value="partial"> Some relationships, not fully documented</label>
           <label><input type="radio" name="network" value="no"> No established network</label>
 
           <!-- 12. Licenses & Permits -->
           <p style="margin-top:8px;"><strong>12. Required Licenses & Permits</strong></p>
-          <label><input type="radio" name="licensespermits" value="full"> All required state/local trade licenses & permits are current</label><br>
-          <label><input type="radio" name="licensespermits" value="partial"> Some are pending or incomplete</label><br>
+          <label><input type="radio" name="licensespermits" value="full"> All required state/local trade licenses & permits are current</label>
+          <label><input type="radio" name="licensespermits" value="partial"> Some are pending or incomplete</label>
           <label><input type="radio" name="licensespermits" value="missing"> We are missing required licenses/permits for some work</label>
 
           <!-- 13. Cash Buffer / Line of Credit -->
           <p style="margin-top:8px;"><strong>13. Cash Buffer / Line of Credit</strong></p>
-          <label><input type="radio" name="cashbuffer" value="strong"> Line of credit + ≥3 months operating reserves</label><br>
-          <label><input type="radio" name="cashbuffer" value="medium"> Some reserves but limited / no LOC</label><br>
+          <label><input type="radio" name="cashbuffer" value="strong"> Line of credit + ≥3 months operating reserves</label>
+          <label><input type="radio" name="cashbuffer" value="medium"> Some reserves but limited / no LOC</label>
           <label><input type="radio" name="cashbuffer" value="weak"> No real buffer; we rely on job-to-job cash</label>
 
           <!-- 14. Invoicing & Certified Payroll -->
           <p style="margin-top:8px;"><strong>14. Invoicing & Certified Payroll</strong></p>
-          <label><input type="radio" name="invoicing" value="strong"> We can produce detailed invoices and certified payroll with backup docs</label><br>
-          <label><input type="radio" name="invoicing" value="partial"> We invoice but aren’t set up for certified payroll / detailed backup</label><br>
+          <label><input type="radio" name="invoicing" value="strong"> We can produce detailed invoices and certified payroll with backup docs</label>
+          <label><input type="radio" name="invoicing" value="partial"> We invoice but aren’t set up for certified payroll / detailed backup</label>
           <label><input type="radio" name="invoicing" value="weak"> Only simple/basic invoices</label>
 
           <!-- 15. Project Management System -->
           <p style="margin-top:8px;"><strong>15. Project Management System</strong></p>
-          <label><input type="radio" name="pmsystem" value="strong"> PM software and standard processes (RFIs, submittals, change orders, punchlists)</label><br>
-          <label><input type="radio" name="pmsystem" value="partial"> Some processes exist but not consistent or documented</label><br>
+          <label><input type="radio" name="pmsystem" value="strong"> PM software and standard processes (RFIs, submittals, change orders, punchlists)</label>
+          <label><input type="radio" name="pmsystem" value="partial"> Some processes exist but not consistent or documented</label>
           <label><input type="radio" name="pmsystem" value="weak"> No formal system; mostly calls/texts</label>
 
           <!-- 16. Scheduling & Timeline -->
           <p style="margin-top:8px;"><strong>16. Scheduling & Timeline Management</strong></p>
-          <label><input type="radio" name="scheduling" value="strong"> We build and track detailed schedules (e.g., Gantt) and update regularly</label><br>
-          <label><input type="radio" name="scheduling" value="partial"> We create simple schedules for larger jobs only</label><br>
+          <label><input type="radio" name="scheduling" value="strong"> We build and track detailed schedules (e.g., Gantt) and update regularly</label>
+          <label><input type="radio" name="scheduling" value="partial"> We create simple schedules for larger jobs only</label>
           <label><input type="radio" name="scheduling" value="weak"> No formal scheduling, just manage as we go</label>
 
           <!-- 17. QA/QC -->
           <p style="margin-top:8px;"><strong>17. QA/QC (Quality Program)</strong></p>
-          <label><input type="radio" name="qaqc" value="strong"> Formal QA/QC plan with checklists and inspections documented</label><br>
-          <label><input type="radio" name="qaqc" value="partial"> We do quality checks but it’s not documented</label><br>
+          <label><input type="radio" name="qaqc" value="strong"> Formal QA/QC plan with checklists and inspections documented</label>
+          <label><input type="radio" name="qaqc" value="partial"> We do quality checks but it’s not documented</label>
           <label><input type="radio" name="qaqc" value="weak"> No documented quality program</label>
 
           <!-- 18. Incident & Claims -->
           <p style="margin-top:8px;"><strong>18. Incident & Claims History (Last 3 Years)</strong></p>
-          <label><input type="radio" name="claims" value="clean"> No OSHA citations or major claims</label><br>
-          <label><input type="radio" name="claims" value="minor"> Minor incidents/claims, all resolved</label><br>
+          <label><input type="radio" name="claims" value="clean"> No OSHA citations or major claims</label>
+          <label><input type="radio" name="claims" value="minor"> Minor incidents/claims, all resolved</label>
           <label><input type="radio" name="claims" value="major"> Major safety violations, lawsuits, or serious claims</label>
 
           <!-- 19. Subcontractor Agreements -->
           <p style="margin-top:8px;"><strong>19. Subcontractor Agreements</strong></p>
-          <label><input type="radio" name="subagreements" value="strong"> Written subcontract agreements and purchase orders with clear terms</label><br>
-          <label><input type="radio" name="subagreements" value="partial"> Sometimes written, sometimes informal</label><br>
+          <label><input type="radio" name="subagreements" value="strong"> Written subcontract agreements and purchase orders with clear terms</label>
+          <label><input type="radio" name="subagreements" value="partial"> Sometimes written, sometimes informal</label>
           <label><input type="radio" name="subagreements" value="weak"> Mostly handshake or verbal agreements</label>
 
           <!-- 20. Bid Strategy & Focus -->
           <p style="margin-top:8px;"><strong>20. Bid Strategy & Focus</strong></p>
-          <label><input type="radio" name="bidstrategy" value="strong"> Clear target trade, geography, and contract size with a written bid strategy</label><br>
-          <label><input type="radio" name="bidstrategy" value="partial"> General idea but nothing written</label><br>
+          <label><input type="radio" name="bidstrategy" value="strong"> Clear target trade, geography, and contract size with a written bid strategy</label>
+          <label><input type="radio" name="bidstrategy" value="partial"> General idea but nothing written</label>
           <label><input type="radio" name="bidstrategy" value="weak"> We bid almost anything that looks good</label>
 
           <!-- 21. Past Performance Documentation -->
           <p style="margin-top:8px;"><strong>21. Past Performance Documentation</strong></p>
-          <label><input type="radio" name="pastdocs" value="strong"> Project sheets/case studies with scope, value, dates, references</label><br>
-          <label><input type="radio" name="pastdocs" value="partial"> Photos and references but not formatted</label><br>
+          <label><input type="radio" name="pastdocs" value="strong"> Project sheets/case studies with scope, value, dates, references</label>
+          <label><input type="radio" name="pastdocs" value="partial"> Photos and references but not formatted</label>
           <label><input type="radio" name="pastdocs" value="weak"> Nothing formal; just word-of-mouth</label>
 
           <!-- 22. Credit Score -->
           <p style="margin-top:8px;"><strong>22. Credit Score</strong></p>
-          <label><input type="radio" name="creditscore" value="620plus"> 620 or better</label><br>
-          <label><input type="radio" name="creditscore" value="below"> Below 620</label><br>
+          <label><input type="radio" name="creditscore" value="620plus"> 620 or better</label>
+          <label><input type="radio" name="creditscore" value="below"> Below 620</label>
           <label><input type="radio" name="creditscore" value="unknown"> Not sure / prefer not to say</label>
 
           <!-- 23. Workers’ Compensation -->
           <p style="margin-top:8px;"><strong>23. Workers’ Compensation Coverage</strong></p>
-          <label><input type="radio" name="workerscomp" value="all"> Yes, all employees/subs are covered</label><br>
-          <label><input type="radio" name="workerscomp" value="na"> Not applicable (no employees or subs)</label><br>
+          <label><input type="radio" name="workerscomp" value="all"> Yes, all employees/subs are covered</label>
+          <label><input type="radio" name="workerscomp" value="na"> Not applicable (no employees or subs)</label>
           <label><input type="radio" name="workerscomp" value="notall"> Some or none are covered</label>
 
           <!-- 24. Back Taxes / IRS Status -->
           <p style="margin-top:8px;"><strong>24. Back Taxes / IRS Status</strong></p>
-          <label><input type="radio" name="backtaxes" value="low"> $0–$10k in back taxes</label><br>
-          <label><input type="radio" name="backtaxes" value="mid"> $11k–$50k in back taxes</label><br>
+          <label><input type="radio" name="backtaxes" value="low"> $0–$10k in back taxes</label>
+          <label><input type="radio" name="backtaxes" value="mid"> $11k–$50k in back taxes</label>
           <label><input type="radio" name="backtaxes" value="high"> $51k+ in back taxes</label>
 
         </div>
       </fieldset>
 
-      <input type="submit" value="Calculate Readiness">
+      <input type="submit" value="Calculate & Submit">
     </form>
 
     <div id="result" class="hidden"></div>
+    <button id="downloadBtn" class="hidden">Download my results</button>
+    <div id="submitStatus" class="hidden"></div>
   </div>
 
   <script>
+    const apiBase = 'https://contract-readiness-widget.onrender.com';
+
     const formEl = document.getElementById('readinessForm');
     const resultEl = document.getElementById('result');
+    const submitStatusEl = document.getElementById('submitStatus');
+    const downloadBtn = document.getElementById('downloadBtn');
 
     const advToggleBtn = document.getElementById('toggleAdvanced');
     const advBlock = document.getElementById('advancedBlock');
@@ -262,19 +314,28 @@
       return 'F';
     }
 
-    formEl.addEventListener('submit', e => {
+    formEl.addEventListener('submit', async e => {
       e.preventDefault();
 
-      // BASIC GRADE
+      submitStatusEl.classList.remove('hidden');
+      submitStatusEl.textContent = 'Calculating and submitting your results...';
+
+      const getRadio = (name) => {
+        const el = document.querySelector('input[name="' + name + '"]:checked');
+        return el ? el.value : '';
+      };
+
       const coreFields = ['insurance', 'bond', 'equipment', 'financials', 'experience'];
       let coreYes = 0;
       let coreAnswered = 0;
+      const coreAnswers = {};
 
       coreFields.forEach(f => {
-        const el = document.querySelector('input[name="' + f + '"]:checked');
-        if (el) {
+        const val = getRadio(f);
+        if (val) {
           coreAnswered++;
-          if (el.value === 'yes') coreYes++;
+          if (val === 'yes') coreYes++;
+          coreAnswers[f] = val;
         }
       });
 
@@ -283,7 +344,7 @@
         : 0;
       const basicLetter = gradeFromPct(basicPct);
 
-      const insuranceVal = (document.querySelector('input[name="insurance"]:checked') || {}).value;
+      const insuranceVal = getRadio('insurance');
       const insuranceStatus = insuranceVal === 'yes' ? 'Insured' : 'Not insured or not selected';
 
       resultEl.classList.remove('hidden');
@@ -298,54 +359,59 @@
       let anyAdvancedAnswered = false;
       let advPct = null;
       let advLetter = null;
+      const advancedAnswers = {};
 
-      // include core into advanced scoring
+      // include core in advanced
       coreFields.forEach(f => {
-        const el = document.querySelector('input[name="' + f + '"]:checked');
-        if (el) {
-          advancedScores.push(el.value === 'yes' ? 1 : 0);
+        const val = coreAnswers[f];
+        if (val) {
+          advancedScores.push(val === 'yes' ? 1 : 0);
         }
       });
 
-      // helper for 3-level radio questions
       function threeLevelScore(name, map) {
-        const el = document.querySelector('input[name="' + name + '"]:checked');
-        if (!el) return null;
+        const val = getRadio(name);
+        if (!val) return null;
         anyAdvancedAnswered = true;
-        return map[el.value] ?? 0;
+        advancedAnswers[name] = val;
+        return map[val] ?? 0;
       }
 
-      // 6. capability
-      const capabilityEl = document.querySelector('input[name="capability"]:checked');
-      if (capabilityEl) {
+      // 6 capability
+      const capabilityVal = getRadio('capability');
+      if (capabilityVal) {
         anyAdvancedAnswered = true;
-        advancedScores.push(capabilityEl.value === 'yes' ? 1 : 0);
+        advancedAnswers.capability = capabilityVal;
+        advancedScores.push(capabilityVal === 'yes' ? 1 : 0);
       }
 
-      // 7. certs
+      // 7 certs
       const certInputs = Array.from(document.querySelectorAll('input[name="certs"]:checked'));
-      if (certInputs.length > 0) {
+      const certValues = certInputs.map(c => c.value);
+      if (certValues.length > 0) {
         anyAdvancedAnswered = true;
-        if (certInputs.some(c => c.value !== 'none')) {
+        advancedAnswers.certs = certValues;
+        if (certValues.some(v => v !== 'none')) {
           advancedScores.push(1);
         } else {
           advancedScores.push(0);
         }
       }
 
-      // 8. bonding detailed
-      const bondingEl = document.querySelector('input[name="bonding"]:checked');
-      if (bondingEl) {
+      // 8 bonding detailed
+      const bondingVal = getRadio('bonding');
+      if (bondingVal) {
         anyAdvancedAnswered = true;
+        advancedAnswers.bonding = bondingVal;
         let bScore = 0;
-        if (bondingEl.value === '500kplus') bScore = 1;
-        else if (bondingEl.value === '500k') bScore = 0.8;
-        else if (bondingEl.value === '100k') bScore = 0.5;
+        if (bondingVal === '500kplus') bScore = 1;
+        else if (bondingVal === '500k') bScore = 0.8;
+        else if (bondingVal === '100k') bScore = 0.5;
         else bScore = 0;
         advancedScores.push(bScore);
       }
 
-      // 9. safety
+      // 9 safety
       const sScore = threeLevelScore('safety', {
         yes: 1,
         partial: 0.5,
@@ -353,7 +419,7 @@
       });
       if (sScore !== null) advancedScores.push(sScore);
 
-      // 10. govpast
+      // 10 govpast
       const gScore = threeLevelScore('govpast', {
         '3+': 1,
         '1-2': 0.5,
@@ -361,7 +427,7 @@
       });
       if (gScore !== null) advancedScores.push(gScore);
 
-      // 11. network
+      // 11 network
       const nScore = threeLevelScore('network', {
         yes: 1,
         partial: 0.5,
@@ -369,7 +435,7 @@
       });
       if (nScore !== null) advancedScores.push(nScore);
 
-      // 12. licenses & permits
+      // 12 licensespermits
       const lpScore = threeLevelScore('licensespermits', {
         full: 1,
         partial: 0.5,
@@ -377,7 +443,7 @@
       });
       if (lpScore !== null) advancedScores.push(lpScore);
 
-      // 13. cash buffer
+      // 13 cashbuffer
       const cbScore = threeLevelScore('cashbuffer', {
         strong: 1,
         medium: 0.5,
@@ -385,7 +451,7 @@
       });
       if (cbScore !== null) advancedScores.push(cbScore);
 
-      // 14. invoicing
+      // 14 invoicing
       const invScore = threeLevelScore('invoicing', {
         strong: 1,
         partial: 0.5,
@@ -393,7 +459,7 @@
       });
       if (invScore !== null) advancedScores.push(invScore);
 
-      // 15. PM system
+      // 15 pmsystem
       const pmScore = threeLevelScore('pmsystem', {
         strong: 1,
         partial: 0.5,
@@ -401,7 +467,7 @@
       });
       if (pmScore !== null) advancedScores.push(pmScore);
 
-      // 16. scheduling
+      // 16 scheduling
       const schScore = threeLevelScore('scheduling', {
         strong: 1,
         partial: 0.5,
@@ -409,7 +475,7 @@
       });
       if (schScore !== null) advancedScores.push(schScore);
 
-      // 17. QA/QC
+      // 17 qaqc
       const qaScore = threeLevelScore('qaqc', {
         strong: 1,
         partial: 0.5,
@@ -417,7 +483,7 @@
       });
       if (qaScore !== null) advancedScores.push(qaScore);
 
-      // 18. claims
+      // 18 claims
       const clScore = threeLevelScore('claims', {
         clean: 1,
         minor: 0.5,
@@ -425,7 +491,7 @@
       });
       if (clScore !== null) advancedScores.push(clScore);
 
-      // 19. subagreements
+      // 19 subagreements
       const saScore = threeLevelScore('subagreements', {
         strong: 1,
         partial: 0.5,
@@ -433,7 +499,7 @@
       });
       if (saScore !== null) advancedScores.push(saScore);
 
-      // 20. bidstrategy
+      // 20 bidstrategy
       const bsScore = threeLevelScore('bidstrategy', {
         strong: 1,
         partial: 0.5,
@@ -441,7 +507,7 @@
       });
       if (bsScore !== null) advancedScores.push(bsScore);
 
-      // 21. pastdocs
+      // 21 pastdocs
       const pdScore = threeLevelScore('pastdocs', {
         strong: 1,
         partial: 0.5,
@@ -449,7 +515,7 @@
       });
       if (pdScore !== null) advancedScores.push(pdScore);
 
-      // 22. credit score
+      // 22 creditscore
       const csScore = threeLevelScore('creditscore', {
         '620plus': 1,
         below: 0,
@@ -457,7 +523,7 @@
       });
       if (csScore !== null) advancedScores.push(csScore);
 
-      // 23. workers comp
+      // 23 workerscomp
       const wcScore = threeLevelScore('workerscomp', {
         all: 1,
         na: 1,
@@ -465,7 +531,7 @@
       });
       if (wcScore !== null) advancedScores.push(wcScore);
 
-      // 24. back taxes
+      // 24 backtaxes
       const btScore = threeLevelScore('backtaxes', {
         low: 1,
         mid: 0.5,
@@ -475,4 +541,236 @@
 
       if (anyAdvancedAnswered && advancedScores.length > 0) {
         const sum = advancedScores.reduce((a, b) => a + b, 0);
-        
+        advPct = Math.round((sum / advancedScores.length) * 100);
+        advLetter = gradeFromPct(advPct);
+
+        resultEl.innerHTML +=
+          '<hr><p><strong>Advanced Readiness Score (core + advanced):</strong> ' +
+          advPct + '% (' + advLetter + ')</p>' +
+          '<p class="tag">The advanced grade includes your answers to both the core 5 questions and all advanced questions.</p>';
+      } else {
+        resultEl.innerHTML +=
+          '<hr><p><strong>Advanced Readiness Score:</strong> Not calculated (no advanced questions answered).</p>';
+      }
+
+      // CHECKLIST (unchanged text logic) – omitted here for brevity in reasoning, but kept fully in your latest version
+      // For simplicity, we’ll reuse the checklist code we already had
+      const advLines = [];
+
+      const capability = getRadio('capability');
+      if (capability === 'yes') advLines.push('✔ Capability statement: Ready');
+      else if (capability === 'no') advLines.push('✖ Capability statement: Missing');
+
+      if (certValues.length && !certValues.includes('none')) {
+        advLines.push('✔ Certifications: ' + certValues.join(', '));
+      } else if (certValues.includes('none')) {
+        advLines.push('✖ Certifications: None in place');
+      }
+
+      const bonding = bondingVal;
+      if (bonding === '500kplus') advLines.push('✔ Bonding: $500k+ capacity');
+      else if (bonding === '500k') advLines.push('✔ Bonding: $100k–$500k capacity');
+      else if (bonding === '100k') advLines.push('△ Bonding: Up to $100k (good for smaller jobs)');
+      else if (bonding === 'none') advLines.push('✖ Bonding: No bonding capacity yet');
+
+      const safetyVal = getRadio('safety');
+      if (safetyVal === 'yes') advLines.push('✔ Safety program: Formal with logs');
+      else if (safetyVal === 'partial') advLines.push('△ Safety program: Partially documented');
+      else if (safetyVal === 'no') advLines.push('✖ Safety program: Not documented');
+
+      const govpastVal = getRadio('govpast');
+      if (govpastVal === '3+') advLines.push('✔ Govt/public past performance: 3+ projects');
+      else if (govpastVal === '1-2') advLines.push('△ Govt/public past performance: 1–2 projects');
+      else if (govpastVal === 'none') advLines.push('✖ Govt/public past performance: None yet');
+
+      const networkVal = getRadio('network');
+      if (networkVal === 'yes') advLines.push('✔ Subcontractor & supplier network: Documented and ready');
+      else if (networkVal === 'partial') advLines.push('△ Subcontractor & supplier network: Partially in place');
+      else if (networkVal === 'no') advLines.push('✖ Subcontractor & supplier network: Not established');
+
+      const licPerm = getRadio('licensespermits');
+      if (licPerm === 'full') advLines.push('✔ Licenses & permits: All current');
+      else if (licPerm === 'partial') advLines.push('△ Licenses & permits: Some pending or incomplete');
+      else if (licPerm === 'missing') advLines.push('✖ Licenses & permits: Missing required items');
+
+      const cashbufferVal = getRadio('cashbuffer');
+      if (cashbufferVal === 'strong') advLines.push('✔ Cash buffer: Strong (LOC + ≥3 months reserves)');
+      else if (cashbufferVal === 'medium') advLines.push('△ Cash buffer: Some reserves but limited');
+      else if (cashbufferVal === 'weak') advLines.push('✖ Cash buffer: Very limited');
+
+      const invoicingVal = getRadio('invoicing');
+      if (invoicingVal === 'strong') advLines.push('✔ Invoicing & payroll: Ready for detailed/certified requirements');
+      else if (invoicingVal === 'partial') advLines.push('△ Invoicing & payroll: Basic, needs upgrades');
+      else if (invoicingVal === 'weak') advLines.push('✖ Invoicing: Very basic only');
+
+      const pmsystemVal = getRadio('pmsystem');
+      if (pmsystemVal === 'strong') advLines.push('✔ Project management: Formal system and processes');
+      else if (pmsystemVal === 'partial') advLines.push('△ Project management: Some structure');
+      else if (pmsystemVal === 'weak') advLines.push('✖ Project management: No formal system');
+
+      const schedulingVal = getRadio('scheduling');
+      if (schedulingVal === 'strong') advLines.push('✔ Scheduling: Detailed and regularly updated');
+      else if (schedulingVal === 'partial') advLines.push('△ Scheduling: Basic on larger jobs');
+      else if (schedulingVal === 'weak') advLines.push('✖ Scheduling: No formal schedules');
+
+      const qaqcVal = getRadio('qaqc');
+      if (qaqcVal === 'strong') advLines.push('✔ QA/QC: Formal quality program in place');
+      else if (qaqcVal === 'partial') advLines.push('△ QA/QC: Informal, not documented');
+      else if (qaqcVal === 'weak') advLines.push('✖ QA/QC: No quality program');
+
+      const claimsVal = getRadio('claims');
+      if (claimsVal === 'clean') advLines.push('✔ Claims history: Clean (last 3 years)');
+      else if (claimsVal === 'minor') advLines.push('△ Claims history: Minor incidents, resolved');
+      else if (claimsVal === 'major') advLines.push('✖ Claims history: Major issues in last 3 years');
+
+      const subagreementsVal = getRadio('subagreements');
+      if (subagreementsVal === 'strong') advLines.push('✔ Subcontractor agreements: Written with clear terms');
+      else if (subagreementsVal === 'partial') advLines.push('△ Subcontractor agreements: Mixed formal/informal');
+      else if (subagreementsVal === 'weak') advLines.push('✖ Subcontractor agreements: Mostly handshake deals');
+
+      const bidstrategyVal = getRadio('bidstrategy');
+      if (bidstrategyVal === 'strong') advLines.push('✔ Bid strategy: Clear and focused');
+      else if (bidstrategyVal === 'partial') advLines.push('△ Bid strategy: Rough idea, not written');
+      else if (bidstrategyVal === 'weak') advLines.push('✖ Bid strategy: No clear focus');
+
+      const pastdocsVal = getRadio('pastdocs');
+      if (pastdocsVal === 'strong') advLines.push('✔ Past performance docs: Project sheets/case studies ready');
+      else if (pastdocsVal === 'partial') advLines.push('△ Past performance docs: Photos/refs only');
+      else if (pastdocsVal === 'weak') advLines.push('✖ Past performance docs: Not documented');
+
+      const creditscoreVal = getRadio('creditscore');
+      if (creditscoreVal === '620plus') advLines.push('✔ Credit: 620+ (stronger profile)');
+      else if (creditscoreVal === 'unknown') advLines.push('△ Credit: Not sure / not tracked');
+      else if (creditscoreVal === 'below') advLines.push('✖ Credit: Below 620');
+
+      const workerscompVal = getRadio('workerscomp');
+      if (workerscompVal === 'all') advLines.push('✔ Workers’ comp: All covered');
+      else if (workerscompVal === 'na') advLines.push('✔ Workers’ comp: Not applicable (no employees/subs)');
+      else if (workerscompVal === 'notall') advLines.push('✖ Workers’ comp: Some or none covered');
+
+      const backtaxesVal = getRadio('backtaxes');
+      if (backtaxesVal === 'low') advLines.push('✔ Back taxes: $0–$10k (manageable)');
+      else if (backtaxesVal === 'mid') advLines.push('△ Back taxes: $11k–$50k – may affect bonding/approval');
+      else if (backtaxesVal === 'high') advLines.push('✖ Back taxes: $51k+ – high risk for government work');
+
+      if (advLines.length) {
+        resultEl.innerHTML +=
+          '<p><strong>Advanced Readiness Checklist:</strong></p><ul>' +
+          advLines.map(l => '<li>' + l + '</li>').join('') +
+          '</ul>';
+      }
+
+      // Build summary text for download & email
+      const contact = {
+        company_name: document.getElementById('company_name').value.trim(),
+        contact_name: document.getElementById('contact_name').value.trim(),
+        email: document.getElementById('contact_email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        website: document.getElementById('website').value.trim()
+      };
+
+      const summaryLines = [];
+      summaryLines.push('Contract Readiness Results');
+      summaryLines.push('--------------------------');
+      summaryLines.push(`Company: ${contact.company_name || ''}`);
+      summaryLines.push(`Contact: ${contact.contact_name || ''}`);
+      summaryLines.push(`Email: ${contact.email || ''}`);
+      summaryLines.push(`Phone: ${contact.phone || ''}`);
+      summaryLines.push(`Website: ${contact.website || ''}`);
+      summaryLines.push('');
+      summaryLines.push(`Basic Score: ${basicPct}% (${basicLetter})`);
+      summaryLines.push(`Advanced Score: ${advPct !== null ? advPct + '%' : 'N/A'} (${advLetter || ''})`);
+      summaryLines.push('');
+      summaryLines.push('Core Answers:');
+      Object.entries(coreAnswers).forEach(([k, v]) => {
+        summaryLines.push(`- ${k}: ${v}`);
+      });
+      summaryLines.push('');
+      summaryLines.push('Advanced Answers:');
+      Object.entries(advancedAnswers).forEach(([k, v]) => {
+        summaryLines.push(`- ${k}: ${Array.isArray(v) ? v.join(', ') : v}`);
+      });
+      summaryLines.push('');
+      summaryLines.push('Checklist Highlights:');
+      advLines.forEach(l => summaryLines.push(`- ${l}`));
+
+      const summaryText = summaryLines.join('\n');
+
+      // Enable download button
+      downloadBtn.classList.remove('hidden');
+      downloadBtn.onclick = () => {
+        const blob = new Blob([summaryText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'contract-readiness-results.txt';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      };
+
+      // LOG (usage) to /log (as before)
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const licenseKey = params.get('license') || '';
+
+        fetch(apiBase + '/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            license: licenseKey,
+            basic_score: basicPct,
+            basic_letter: basicLetter,
+            advanced_score: advPct,
+            advanced_letter: advLetter,
+            insuranceStatus
+          })
+        }).catch(() => {});
+      } catch (e) {}
+
+      // FULL SUBMISSION to /submit-form (for storage + email)
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const licenseKey = params.get('license') || '';
+
+        const submissionPayload = {
+          license: licenseKey,
+          contact,
+          core_answers: coreAnswers,
+          advanced_answers: advancedAnswers,
+          scores: {
+            basic_score: basicPct,
+            basic_letter: basicLetter,
+            advanced_score: advPct,
+            advanced_letter: advLetter
+          }
+        };
+
+        const res = await fetch(apiBase + '/submit-form', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(submissionPayload)
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (data && data.ok) {
+          let msg = 'Your responses have been saved.';
+          if (contact.email) {
+            if (data.emailed_user) {
+              msg += ' A copy was emailed to you.';
+            } else {
+              msg += ' If email was not delivered, you can use the download button above.';
+            }
+          }
+          submitStatusEl.textContent = msg;
+        } else {
+          submitStatusEl.textContent = 'Your results were calculated, but there was an issue saving them on the server.';
+        }
+      } catch (err) {
+        submitStatusEl.textContent = 'Your results were calculated, but there was an error sending them to the server.';
+      }
+    });
+  </script>
+</body>
+</html>
