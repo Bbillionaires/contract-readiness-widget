@@ -1,4 +1,4 @@
-      <!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -108,7 +108,7 @@
       <!-- Advanced section (optional) -->
       <fieldset>
         <legend>Advanced Readiness (Optional)</legend>
-        <p>Answer these for a deeper readiness checklist. This will not affect your letter grade.</p>
+        <p>Answer these for a deeper readiness checklist. The advanced grade uses both the core 5 and these extra questions.</p>
         <button type="button" id="toggleAdvanced">Show advanced questions</button>
 
         <div id="advancedBlock" class="hidden" style="margin-top:8px;">
@@ -116,7 +116,7 @@
           <label><input type="radio" name="capability" value="yes"> Yes</label>
           <label><input type="radio" name="capability" value="no"> No</label>
 
-          <p style="margin-top:8px;"><strong>7. Certifications</strong></p>
+          <p style="margin-top:8px;"><strong>7. Certifications</strong> (check all that apply)</p>
           <label><input type="checkbox" name="certs" value="8a"> 8(a)</label>
           <label><input type="checkbox" name="certs" value="wosb"> WOSB</label>
           <label><input type="checkbox" name="certs" value="sdvosb"> SDVOSB</label>
@@ -135,12 +135,12 @@
           <label><input type="radio" name="safety" value="partial"> Partially</label>
           <label><input type="radio" name="safety" value="no"> No</label>
 
-          <p style="margin-top:8px;"><strong>10. Government Past Performance</strong></p>
+          <p style="margin-top:8px;"><strong>10. Government / Public Past Performance</strong></p>
           <label><input type="radio" name="govpast" value="none"> None</label>
           <label><input type="radio" name="govpast" value="1-2"> 1–2 Projects</label>
           <label><input type="radio" name="govpast" value="3+"> 3+ Projects</label>
 
-          <p style="margin-top:8px;"><strong>11. Subcontractor/Supplier Network</strong></p>
+          <p style="margin-top:8px;"><strong>11. Subcontractor & Supplier Network</strong></p>
           <label><input type="radio" name="network" value="yes"> Yes</label>
           <label><input type="radio" name="network" value="partial"> Partial</label>
           <label><input type="radio" name="network" value="no"> No</label>
@@ -171,67 +171,164 @@
       }
     });
 
+    function gradeFromPct(pct) {
+      if (pct >= 90) return 'A';
+      if (pct >= 80) return 'B';
+      if (pct >= 70) return 'C';
+      if (pct >= 60) return 'D';
+      return 'F';
+    }
+
     formEl.addEventListener('submit', e => {
       e.preventDefault();
 
-      // Quick score: 5 core yes/no
-      const fields = ['insurance','bond','equipment','financials','experience'];
-      let yesCount = 0;
-      fields.forEach(f=>{
-        const val=(document.querySelector('input[name="'+f+'"]:checked')||{}).value;
-        if(val==='yes') yesCount++;
+      // ---- BASIC GRADE (5 key questions only) ----
+      const coreFields = ['insurance', 'bond', 'equipment', 'financials', 'experience'];
+      let coreYes = 0;
+      let coreAnswered = 0;
+
+      coreFields.forEach(f => {
+        const el = document.querySelector('input[name="' + f + '"]:checked');
+        if (el) {
+          coreAnswered++;
+          if (el.value === 'yes') coreYes++;
+        }
       });
-      const pct = Math.round((yesCount/fields.length)*100);
-      let letter='F';
-      if(pct>=90) letter='A';
-      else if(pct>=80) letter='B';
-      else if(pct>=70) letter='C';
-      else if(pct>=60) letter='D';
 
-      const insuranceStatus = (document.querySelector('input[name="insurance"]:checked')||{}).value==='yes'?'Insured':'Not insured';
+      const basicPct = coreAnswered
+        ? Math.round((coreYes / coreAnswered) * 100)
+        : 0;
+      const basicLetter = gradeFromPct(basicPct);
 
+      const insuranceVal = (document.querySelector('input[name="insurance"]:checked') || {}).value;
+      const insuranceStatus = insuranceVal === 'yes' ? 'Insured' : 'Not insured or not selected';
+
+      // Start building result HTML with BASIC grade
       resultEl.classList.remove('hidden');
       resultEl.innerHTML =
-        '<p><strong>Readiness Score:</strong> '+pct+'% ('+letter+')</p>'+
-        '<p><strong>Insurance Status:</strong> '+insuranceStatus+'</p>'+
-        '<p class="tag">Upgrade-Ready means you can qualify once coverage is increased.</p>';
+        '<p><strong>Basic Readiness Score (5 core items):</strong> ' +
+        basicPct + '% (' + basicLetter + ')</p>' +
+        '<p><strong>Insurance Status:</strong> ' + insuranceStatus + '</p>' +
+        '<p class="tag">The basic grade is based on the 5 core questions only.</p>';
 
-      // Advanced checklist (optional)
-      const advLines=[];
-      const capability=(document.querySelector('input[name="capability"]:checked')||{}).value;
-      if(capability==='yes') advLines.push('✔ Capability statement: Ready');
-      else if(capability==='no') advLines.push('✖ Capability statement: Missing');
+      // ---- ADVANCED GRADE (core + advanced, only if advanced answered) ----
 
-      const certValues=Array.from(document.querySelectorAll('input[name="certs"]:checked')).map(c=>c.value);
-      if(certValues.length && !certValues.includes('none')) advLines.push('✔ Certifications: '+certValues.join(', '));
-      else if(certValues.includes('none')) advLines.push('✖ Certifications: None');
+      const advancedScores = [];
 
-      const bonding=(document.querySelector('input[name="bonding"]:checked')||{}).value;
-      if(bonding==='500kplus') advLines.push('✔ Bonding: $500k+ capacity');
-      else if(bonding==='500k') advLines.push('✔ Bonding: $100k–$500k');
-      else if(bonding==='100k') advLines.push('△ Bonding: Up to $100k');
-      else if(bonding==='none') advLines.push('✖ Bonding: None');
+      // Include the 5 core questions in the advanced grade as well (yes = 1, no = 0)
+      coreFields.forEach(f => {
+        const el = document.querySelector('input[name="' + f + '"]:checked');
+        if (el) {
+          advancedScores.push(el.value === 'yes' ? 1 : 0);
+        }
+      });
 
-      const safety=(document.querySelector('input[name="safety"]:checked')||{}).value;
-      if(safety==='yes') advLines.push('✔ Safety program: Formal');
-      else if(safety==='partial') advLines.push('△ Safety: Partial');
-      else if(safety==='no') advLines.push('✖ Safety: None');
+      // Track if ANY advanced question was answered
+      let anyAdvancedAnswered = false;
 
-      const govpast=(document.querySelector('input[name="govpast"]:checked')||{}).value;
-      if(govpast==='3+') advLines.push('✔ Gov/Public: 3+ projects');
-      else if(govpast==='1-2') advLines.push('△ Gov/Public: 1–2 projects');
-      else if(govpast==='none') advLines.push('✖ Gov/Public: None');
+      // Q6 Capability statement
+      const capabilityEl = document.querySelector('input[name="capability"]:checked');
+      if (capabilityEl) {
+        anyAdvancedAnswered = true;
+        advancedScores.push(capabilityEl.value === 'yes' ? 1 : 0);
+      }
 
-      const network=(document.querySelector('input[name="network"]:checked')||{}).value;
-      if(network==='yes') advLines.push('✔ Subcontractor & supplier network: Documented');
-      else if(network==='partial') advLines.push('△ Network: Partial');
-      else if(network==='no') advLines.push('✖ Network: None');
+      // Q7 Certifications
+      const certInputs = Array.from(document.querySelectorAll('input[name="certs"]:checked'));
+      if (certInputs.length > 0) {
+        anyAdvancedAnswered = true;
+        if (certInputs.some(c => c.value !== 'none')) {
+          advancedScores.push(1);
+        } else {
+          advancedScores.push(0);
+        }
+      }
 
-      if(advLines.length){
-        resultEl.innerHTML+='<hr><p><strong>Advanced Readiness Checklist:</strong></p><ul>'+
-          advLines.map(l=>'<li>'+l+'</li>').join('')+'</ul>';
+      // Q8 Bonding capacity
+      const bondingEl = document.querySelector('input[name="bonding"]:checked');
+      if (bondingEl) {
+        anyAdvancedAnswered = true;
+        advancedScores.push(bondingEl.value === 'none' ? 0 : 1);
+      }
+
+      // Q9 Safety program
+      const safetyEl = document.querySelector('input[name="safety"]:checked');
+      if (safetyEl) {
+        anyAdvancedAnswered = true;
+        advancedScores.push(safetyEl.value === 'yes' ? 1 : 0);
+      }
+
+      // Q10 Government / public past performance
+      const govpastEl = document.querySelector('input[name="govpast"]:checked');
+      if (govpastEl) {
+        anyAdvancedAnswered = true;
+        advancedScores.push(govpastEl.value === 'none' ? 0 : 1);
+      }
+
+      // Q11 Network
+      const networkEl = document.querySelector('input[name="network"]:checked');
+      if (networkEl) {
+        anyAdvancedAnswered = true;
+        advancedScores.push(networkEl.value === 'yes' ? 1 : 0);
+      }
+
+      if (anyAdvancedAnswered && advancedScores.length > 0) {
+        const sum = advancedScores.reduce((a, b) => a + b, 0);
+        const advPct = Math.round((sum / advancedScores.length) * 100);
+        const advLetter = gradeFromPct(advPct);
+
+        resultEl.innerHTML +=
+          '<hr><p><strong>Advanced Readiness Score (core + advanced):</strong> ' +
+          advPct + '% (' + advLetter + ')</p>' +
+          '<p class="tag">The advanced grade includes your answers to both the core 5 questions and the advanced questions above.</p>';
+      } else {
+        resultEl.innerHTML +=
+          '<hr><p><strong>Advanced Readiness Score:</strong> Not calculated (no advanced questions answered).</p>';
+      }
+
+      // ---- Advanced checklist (for explanation, not grading) ----
+      const advLines = [];
+
+      const capability = (document.querySelector('input[name="capability"]:checked') || {}).value;
+      if (capability === 'yes') advLines.push('✔ Capability statement: Ready');
+      else if (capability === 'no') advLines.push('✖ Capability statement: Missing');
+
+      const certValues = certInputs.map(c => c.value);
+      if (certValues.length && !certValues.includes('none')) {
+        advLines.push('✔ Certifications: ' + certValues.join(', '));
+      } else if (certValues.includes('none')) {
+        advLines.push('✖ Certifications: None in place');
+
+      }
+
+      const bonding = (document.querySelector('input[name="bonding"]:checked') || {}).value;
+      if (bonding === '500kplus') advLines.push('✔ Bonding: $500k+ capacity');
+      else if (bonding === '500k') advLines.push('✔ Bonding: $100k–$500k capacity');
+      else if (bonding === '100k') advLines.push('△ Bonding: Up to $100k (good for smaller jobs)');
+      else if (bonding === 'none') advLines.push('✖ Bonding: No bonding capacity yet');
+
+      const safety = (document.querySelector('input[name="safety"]:checked') || {}).value;
+      if (safety === 'yes') advLines.push('✔ Safety program: Formal program + OSHA logs');
+      else if (safety === 'partial') advLines.push('△ Safety program: Partially documented');
+      else if (safety === 'no') advLines.push('✖ Safety program: No formal documentation');
+
+      const govpast = (document.querySelector('input[name="govpast"]:checked') || {}).value;
+      if (govpast === '3+') advLines.push('✔ Govt/public past performance: 3+ projects');
+      else if (govpast === '1-2') advLines.push('△ Govt/public past performance: 1–2 projects');
+      else if (govpast === 'none') advLines.push('✖ Govt/public past performance: None yet');
+
+      const network = (document.querySelector('input[name="network"]:checked') || {}).value;
+      if (network === 'yes') advLines.push('✔ Subcontractor & supplier network: Documented and ready');
+      else if (network === 'partial') advLines.push('△ Subcontractor & supplier network: Partially in place');
+      else if (network === 'no') advLines.push('✖ Subcontractor & supplier network: Not established');
+
+      if (advLines.length) {
+        resultEl.innerHTML +=
+          '<p><strong>Advanced Readiness Checklist:</strong></p><ul>' +
+          advLines.map(l => '<li>' + l + '</li>').join('') +
+          '</ul>';
       }
     });
   </script>
 </body>
-</html>  
+</html>
