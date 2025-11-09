@@ -1,4 +1,4 @@
-// server.js – full version with Stripe webhook, admin, usage metrics
+// server.js – full version with logging, Stripe webhook, admin, usage metrics
 
 const express = require('express');
 const cors = require('cors');
@@ -13,6 +13,12 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 const app = express();
 const PORT = process.env.PORT || 10000;
+
+// Log all incoming requests
+app.use((req, res, next) => {
+  console.log('Incoming:', req.method, req.path);
+  next();
+});
 
 // Middleware
 app.use(cors());
@@ -135,7 +141,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// List licenses with search + sorted newest first
+// List licenses with search + newest first
 app.get('/admin/licenses', requireAdmin, (req, res) => {
   const search = (req.query.search || '').toLowerCase();
   const items = Object.entries(licenses).map(([key, lic]) => ({
@@ -212,7 +218,7 @@ app.get('/admin/usage', requireAdmin, (req, res) => {
           }
         }
       } catch (e) {
-        // ignore bad lines
+        // ignore malformed lines
       }
     });
 
@@ -225,7 +231,7 @@ app.get('/admin/usage', requireAdmin, (req, res) => {
   });
 });
 
-// --- Lookup endpoint (used by thank-you page, email-based) ---
+// --- Lookup endpoint (email-based, used by thank-you page) ---
 app.get('/lookup', async (req, res) => {
   try {
     let email = (req.query.email || '').trim().toLowerCase();
@@ -263,14 +269,18 @@ app.get('/lookup', async (req, res) => {
 
 // --- Stripe webhook: auto-create licenses on successful checkout ---
 app.post('/stripe/webhook', (req, res) => {
+  console.log('Webhook hit:', req.body && req.body.type, 'id:', req.body && req.body.id);
+
   if (!stripe) {
-    // If Stripe not configured, just acknowledge
+    console.log('Stripe not configured: STRIPE_SECRET_KEY is missing');
     return res.json({ received: true, message: 'Stripe not configured' });
   }
 
   const event = req.body;
 
   if (event && event.type === 'checkout.session.completed') {
+    console.log('Processing checkout.session.completed event');
+
     const session = event.data && event.data.object;
 
     if (session) {
@@ -280,7 +290,6 @@ app.post('/stripe/webhook', (req, res) => {
       const firstName = parts[0] || '';
       const lastName = parts.slice(1).join(' ') || '';
 
-      // Try to get domain from custom_fields (if set up in Stripe)
       let domain = '';
       if (Array.isArray(session.custom_fields)) {
         const field = session.custom_fields.find(f => f.key === 'website_domain');
@@ -289,7 +298,6 @@ app.post('/stripe/webhook', (req, res) => {
         }
       }
 
-      // Generate random license key (16 hex chars)
       const licenseKey = crypto.randomBytes(8).toString('hex').toUpperCase();
 
       licenses[licenseKey] = {
@@ -300,7 +308,7 @@ app.post('/stripe/webhook', (req, res) => {
         company: session.client_reference_id || '',
         allowed_domains: domain ? [domain] : [],
         stripe_customer_id: session.customer || '',
-        stripe_subscription_item_id: '', // can be filled later
+        stripe_subscription_item_id: '',
         plan: 'standard',
         created_at: new Date().toISOString()
       };
@@ -308,6 +316,8 @@ app.post('/stripe/webhook', (req, res) => {
       saveLicenses();
       console.log('Created license from Stripe webhook:', licenseKey, email);
     }
+  } else {
+    console.log('Webhook event type ignored:', event && event.type);
   }
 
   res.json({ received: true });
