@@ -1,7 +1,7 @@
 {
-  "name": "contract-readiness-widget",
+  "name": "contract-readiness-widget-api",
   "version": "1.0.0",
-  "description": "Backend API for Contract Readiness Widget",
+  "description": "Backend API for the Contract Readiness Calculator widget (licenses, logging, Stripe, submissions, email).",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,6 +9,11 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
-    "stripe": "^16.0.0"
-  }
+    "stripe": "^16.0.0",
+    "nodemailer": "^6.9.15"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
 }
