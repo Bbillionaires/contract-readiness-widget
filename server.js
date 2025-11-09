@@ -1,5 +1,11 @@
-// server.js – API for Contract Readiness Widget
-// Includes: license check, usage log, admin APIs, Stripe webhook, full submission log + email
+    // server.js – API for Contract Readiness Widget
+// Features:
+// - License check
+// - Usage logging
+// - Full submission logging
+// - Per-license email notifications
+// - Stripe webhook for auto-license creation
+// - Admin endpoints for licenses and usage
 
 const express = require('express');
 const cors = require('cors');
@@ -16,9 +22,11 @@ const stripe = process.env.STRIPE_SECRET_KEY
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Email config (optional)
+// ---------------- Email configuration ----------------
+
 const OWNER_NOTIFICATION_EMAIL = process.env.OWNER_NOTIFICATION_EMAIL || '';
 const EMAIL_FROM = process.env.EMAIL_FROM || OWNER_NOTIFICATION_EMAIL || '';
+
 let emailEnabled = false;
 let transporter = null;
 
@@ -41,20 +49,20 @@ if (
   emailEnabled = true;
   console.log('Email notifications enabled.');
 } else {
-  console.log('Email notifications NOT fully configured. Submissions will only be logged.');
+  console.log('Email notifications NOT fully configured. Submissions will only be logged to file.');
 }
 
-// Log all incoming requests
+// --------------- Basic middleware / logging ------------
+
 app.use((req, res, next) => {
   console.log('Incoming:', req.method, req.path);
   next();
 });
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// --- License file loading + saving ---
+// --------------- Files / storage paths -----------------
 
 const licensesPath = path.join(__dirname, 'licenses.json');
 const submissionsPath = path.join(__dirname, 'submissions.log');
@@ -80,7 +88,6 @@ function saveLicenses() {
   }
 }
 
-// Helper: extract domain from Origin/Referer
 function getDomainFromOrigin(originHeader) {
   try {
     if (!originHeader) return null;
@@ -91,12 +98,14 @@ function getDomainFromOrigin(originHeader) {
   }
 }
 
-// --- Basic health check ---
+// ----------------- Health check -----------------------
+
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'Contract Readiness API running' });
 });
 
-// --- License check endpoint ---
+// ----------------- License check ----------------------
+
 app.get('/license', (req, res) => {
   const key = req.query.key || '';
   const lic = licenses[key];
@@ -105,7 +114,7 @@ app.get('/license', (req, res) => {
     return res.json({ active: false });
   }
 
-  // Optional domain lock
+  // Optional domain restriction
   const origin = req.headers.origin || req.headers.referer || '';
   const reqDomain = getDomainFromOrigin(origin);
   if (lic.allowed_domains && lic.allowed_domains.length && reqDomain) {
@@ -122,7 +131,8 @@ app.get('/license', (req, res) => {
   });
 });
 
-// --- Usage log endpoint (basic/advanced scores) ---
+// --------------- Usage logging (/log) -----------------
+
 app.post('/log', async (req, res) => {
   const {
     license,
@@ -172,7 +182,8 @@ app.post('/log', async (req, res) => {
   res.json({ ok: true });
 });
 
-// --- Full submission storage + optional email ---
+// ------- Full submission logging + per-license emails -------
+
 app.post('/submit-form', async (req, res) => {
   try {
     const body = req.body || {};
@@ -189,6 +200,7 @@ app.post('/submit-form', async (req, res) => {
       domain: reqDomain
     };
 
+    // Save to submissions.log (one JSON per line)
     fs.appendFileSync(submissionsPath, JSON.stringify(record) + '\n');
 
     let emailedOwner = false;
@@ -196,9 +208,13 @@ app.post('/submit-form', async (req, res) => {
 
     if (emailEnabled) {
       const contactEmail = (record.contact.email || '').trim();
-      const contactName = record.contact.contact_name || record.contact.name || '';
-      const summaryLines = [];
+      const contactName =
+        record.contact.contact_name ||
+        record.contact.name ||
+        '';
 
+      // Build summary text for owner + user
+      const summaryLines = [];
       summaryLines.push('New Contract Readiness Submission');
       summaryLines.push('--------------------------------');
       summaryLines.push(`Timestamp: ${record.ts}`);
@@ -230,20 +246,29 @@ app.post('/submit-form', async (req, res) => {
 
       const summaryText = summaryLines.join('\n');
 
-      // Email to owner
-      try {
-        await transporter.sendMail({
-          from: EMAIL_FROM,
-          to: OWNER_NOTIFICATION_EMAIL,
-          subject: 'New Contract Readiness Submission',
-          text: summaryText
-        });
-        emailedOwner = true;
-      } catch (err) {
-        console.error('Owner email error:', err.message);
+      // Decide which email gets the owner-style notification:
+      // 1) If the license has a notify_email, use that
+      // 2) Else use OWNER_NOTIFICATION_EMAIL
+      let ownerTo = OWNER_NOTIFICATION_EMAIL;
+      if (record.license && licenses[record.license] && licenses[record.license].notify_email) {
+        ownerTo = licenses[record.license].notify_email;
       }
 
-      // Email to user (if email provided)
+      if (ownerTo) {
+        try {
+          await transporter.sendMail({
+            from: EMAIL_FROM,
+            to: ownerTo,
+            subject: 'New Contract Readiness Submission',
+            text: summaryText
+          });
+          emailedOwner = true;
+        } catch (err) {
+          console.error('Owner email error:', err.message);
+        }
+      }
+
+      // Email to user (if they provided an email)
       if (contactEmail) {
         try {
           await transporter.sendMail({
@@ -266,7 +291,7 @@ app.post('/submit-form', async (req, res) => {
   }
 });
 
-// --- Admin auth + routes ---
+// ----------------- Admin auth / helpers ----------------
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
 
@@ -278,7 +303,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// List licenses with search + newest first
+// List licenses
 app.get('/admin/licenses', requireAdmin, (req, res) => {
   const search = (req.query.search || '').toLowerCase();
   const items = Object.entries(licenses).map(([key, lic]) => ({
@@ -306,7 +331,7 @@ app.get('/admin/licenses', requireAdmin, (req, res) => {
   res.json({ ok: true, licenses: filtered });
 });
 
-// Toggle active/inactive
+// Toggle license active/inactive
 app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
   const key = req.params.key;
   const lic = licenses[key];
@@ -323,7 +348,7 @@ app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
   res.json({ ok: true, license: { key, ...lic } });
 });
 
-// Usage metrics from usage.log
+// Usage metrics
 app.get('/admin/usage', requireAdmin, (req, res) => {
   fs.readFile(usagePath, 'utf8', (err, data) => {
     if (err || !data || !data.trim()) {
@@ -344,6 +369,7 @@ app.get('/admin/usage', requireAdmin, (req, res) => {
           stats[lic] = { count: 0, last_ts: null };
         }
         stats[lic].count += 1;
+
         if (ts) {
           if (!stats[lic].last_ts || new Date(ts) > new Date(stats[lic].last_ts)) {
             stats[lic].last_ts = ts;
@@ -353,7 +379,7 @@ app.get('/admin/usage', requireAdmin, (req, res) => {
           }
         }
       } catch (e) {
-        // ignore malformed lines
+        // ignore malformed line
       }
     });
 
@@ -366,7 +392,8 @@ app.get('/admin/usage', requireAdmin, (req, res) => {
   });
 });
 
-// --- Lookup endpoint (email-based, used by thank-you page) ---
+// -------------- Lookup license by email ----------------
+
 app.get('/lookup', async (req, res) => {
   try {
     let email = (req.query.email || '').trim().toLowerCase();
@@ -402,7 +429,8 @@ app.get('/lookup', async (req, res) => {
   }
 });
 
-// --- Stripe webhook: auto-create licenses on successful checkout ---
+// -------------- Stripe webhook: auto licenses ----------
+
 app.post('/stripe/webhook', (req, res) => {
   console.log('Webhook hit:', req.body && req.body.type, 'id:', req.body && req.body.id);
 
@@ -433,6 +461,7 @@ app.post('/stripe/webhook', (req, res) => {
         }
       }
 
+      // Generate a license key
       const licenseKey = crypto.randomBytes(8).toString('hex').toUpperCase();
 
       licenses[licenseKey] = {
@@ -446,6 +475,7 @@ app.post('/stripe/webhook', (req, res) => {
         stripe_subscription_item_id: '',
         plan: 'standard',
         created_at: new Date().toISOString()
+        // You can manually add "notify_email" later for this license
       };
 
       saveLicenses();
@@ -458,7 +488,8 @@ app.post('/stripe/webhook', (req, res) => {
   res.json({ received: true });
 });
 
-// --- Start server ---
+// ----------------- Start server ------------------------
+
 app.listen(PORT, () => {
   console.log('API listening on port', PORT);
 });
