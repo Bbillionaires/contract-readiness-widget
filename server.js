@@ -4,6 +4,7 @@
 // - Usage logging
 // - Full submission logging
 // - Per-license email notifications
+// - free_usage flag to disable metered billing
 // - Stripe webhook for auto-license creation
 // - Admin endpoints for licenses, usage, submissions
 
@@ -127,7 +128,8 @@ app.get('/license', (req, res) => {
 
   return res.json({
     active: true,
-    plan: lic.plan || 'standard'
+    plan: lic.plan || 'standard',
+    free_usage: !!lic.free_usage
   });
 });
 
@@ -161,10 +163,15 @@ app.post('/log', async (req, res) => {
     if (err) console.error('Failed to write usage log:', err.message);
   });
 
-  // Optional Stripe metered usage
+  // Optional Stripe metered usage - SKIP if free_usage is true
   try {
     const lic = licenses[license];
-    if (stripe && lic && lic.stripe_subscription_item_id) {
+    if (
+      stripe &&
+      lic &&
+      lic.stripe_subscription_item_id &&
+      !lic.free_usage
+    ) {
       await stripe.subscriptionItems.createUsageRecord(
         lic.stripe_subscription_item_id,
         {
@@ -174,6 +181,8 @@ app.post('/log', async (req, res) => {
         }
       );
       console.log('Usage recorded for license:', license);
+    } else if (lic && lic.free_usage) {
+      console.log('Usage logged but not billed (free_usage=true) for license:', license);
     }
   } catch (err) {
     console.error('Stripe usage error:', err.message);
@@ -332,7 +341,7 @@ app.get('/admin/licenses', requireAdmin, (req, res) => {
   res.json({ ok: true, licenses: filtered });
 });
 
-// Update license (active, notify_email, allowed_domains, company)
+// Update license (active, notify_email, allowed_domains, company, free_usage)
 app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
   const key = req.params.key;
   const lic = licenses[key];
@@ -353,6 +362,9 @@ app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
   }
   if (typeof body.company === 'string') {
     lic.company = body.company.trim();
+  }
+  if (typeof body.free_usage === 'boolean') {
+    lic.free_usage = body.free_usage;
   }
 
   saveLicenses();
@@ -516,8 +528,9 @@ app.post('/stripe/webhook', (req, res) => {
         stripe_customer_id: session.customer || '',
         stripe_subscription_item_id: '',
         plan: 'standard',
+        free_usage: false,
         created_at: new Date().toISOString()
-        // You can set notify_email later via admin.html without editing files
+        // You can set notify_email and toggle free_usage later via admin.html
       };
 
       saveLicenses();
