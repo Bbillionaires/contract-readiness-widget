@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Contract Readiness – Submissions Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 0;
+      color: #111827;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #1e3a8a;
+      margin-bottom: 10px;
+    }
+    #status {
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #e5e7eb;
+    }
+    tr:nth-child(even) {
+      background: #f9fafb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Submissions Admin</h1>
+    <div id="status">Loading...</div>
+    <table id="submissionsTable">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>License</th>
+          <th>Domain</th>
+          <th>Company / Contact</th>
+          <th>Contact Info</th>
+          <th>Scores</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const apiBase = 'https://contract-readiness-widget.onrender.com';
+    let adminSecret = '';
+
+    async function loadSubmissions() {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Loading submissions...';
+
+      try {
+        const params = new URLSearchParams();
+        params.set('admin', adminSecret);
+
+        const res = await fetch(apiBase + '/admin/submissions?' + params.toString());
+        const data = await res.json();
+
+        if (!data.ok) {
+          statusEl.textContent = 'Error loading submissions.';
+          return;
+        }
+
+        renderTable(data.submissions || []);
+        statusEl.textContent = `Loaded ${data.submissions.length} submission(s). Showing newest first.`;
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error loading submissions.';
+      }
+    }
+
+    function renderTable(submissions) {
+      const tbody = document.querySelector('#submissionsTable tbody');
+      tbody.innerHTML = '';
+
+      submissions.forEach(sub => {
+        const tr = document.createElement('tr');
+
+        const tdTs = document.createElement('td');
+        tdTs.textContent = sub.ts || '';
+        tr.appendChild(tdTs);
+
+        const tdLic = document.createElement('td');
+        tdLic.textContent = sub.license || '';
+        tr.appendChild(tdLic);
+
+        const tdDomain = document.createElement('td');
+        tdDomain.textContent = sub.domain || '';
+        tr.appendChild(tdDomain);
+
+        const tdCompany = document.createElement('td');
+        const contact = sub.contact || {};
+        tdCompany.innerHTML =
+          (contact.company_name || '') +
+          '<br>' +
+          (contact.contact_name || '');
+        tr.appendChild(tdCompany);
+
+        const tdContact = document.createElement('td');
+        tdContact.innerHTML =
+          (contact.email || '') +
+          '<br>' +
+          (contact.phone || '') +
+          '<br>' +
+          (contact.website || '');
+        tr.appendChild(tdContact);
+
+        const tdScores = document.createElement('td');
+        const scores = sub.scores || {};
+        tdScores.innerHTML =
+          'Basic: ' +
+          (scores.basic_score ?? '') +
+          ' (' +
+          (scores.basic_letter || '') +
+          ')' +
+          '<br>' +
+          'Advanced: ' +
+          (scores.advanced_score ?? 'N/A') +
+          ' (' +
+          (scores.advanced_letter || '') +
+          ')';
+        tr.appendChild(tdScores);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.addEventListener('load', () => {
+      adminSecret = window.prompt('Enter ADMIN_SECRET:');
+      if (!adminSecret) {
+        document.getElementById('status').textContent = 'Admin secret is required.';
+        return;
+      }
+      loadSubmissions();
+    });
+  </script>
+</body>
+</html>
