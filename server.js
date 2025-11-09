@@ -1,11 +1,11 @@
-    // server.js – API for Contract Readiness Widget
+// server.js – API for Contract Readiness Widget
 // Features:
 // - License check
 // - Usage logging
 // - Full submission logging
 // - Per-license email notifications
 // - Stripe webhook for auto-license creation
-// - Admin endpoints for licenses and usage
+// - Admin endpoints for licenses & usage
 
 const express = require('express');
 const cors = require('cors');
@@ -303,7 +303,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// List licenses
+// List licenses (with search)
 app.get('/admin/licenses', requireAdmin, (req, res) => {
   const search = (req.query.search || '').toLowerCase();
   const items = Object.entries(licenses).map(([key, lic]) => ({
@@ -318,6 +318,7 @@ app.get('/admin/licenses', requireAdmin, (req, res) => {
       (item.last_name || '').toLowerCase().includes(search) ||
       (item.email || '').toLowerCase().includes(search) ||
       (item.company || '').toLowerCase().includes(search) ||
+      (item.notify_email || '').toLowerCase().includes(search) ||
       item.key.toLowerCase().includes(search)
     );
   }
@@ -331,7 +332,7 @@ app.get('/admin/licenses', requireAdmin, (req, res) => {
   res.json({ ok: true, licenses: filtered });
 });
 
-// Toggle license active/inactive
+// Update license (active, notify_email, allowed_domains, company)
 app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
   const key = req.params.key;
   const lic = licenses[key];
@@ -340,8 +341,18 @@ app.patch('/admin/licenses/:key', requireAdmin, (req, res) => {
   }
 
   const body = req.body || {};
+
   if (typeof body.active === 'boolean') {
     lic.active = body.active;
+  }
+  if (typeof body.notify_email === 'string') {
+    lic.notify_email = body.notify_email.trim();
+  }
+  if (Array.isArray(body.allowed_domains)) {
+    lic.allowed_domains = body.allowed_domains.map(d => d.trim()).filter(Boolean);
+  }
+  if (typeof body.company === 'string') {
+    lic.company = body.company.trim();
   }
 
   saveLicenses();
@@ -475,7 +486,7 @@ app.post('/stripe/webhook', (req, res) => {
         stripe_subscription_item_id: '',
         plan: 'standard',
         created_at: new Date().toISOString()
-        // You can manually add "notify_email" later for this license
+        // You can set notify_email later via admin.html without editing files
       };
 
       saveLicenses();
