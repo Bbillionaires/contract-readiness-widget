@@ -553,8 +553,7 @@
           '<hr><p><strong>Advanced Readiness Score:</strong> Not calculated (no advanced questions answered).</p>';
       }
 
-      // CHECKLIST (unchanged text logic) – omitted here for brevity in reasoning, but kept fully in your latest version
-      // For simplicity, we’ll reuse the checklist code we already had
+      // CHECKLIST
       const advLines = [];
 
       const capability = getRadio('capability');
@@ -660,7 +659,8 @@
           '</ul>';
       }
 
-      // Build summary text for download & email
+      // CONTACT SUMMARY + DOWNLOAD + SUBMIT
+
       const contact = {
         company_name: document.getElementById('company_name').value.trim(),
         contact_name: document.getElementById('contact_name').value.trim(),
@@ -696,7 +696,7 @@
 
       const summaryText = summaryLines.join('\n');
 
-      // Enable download button
+      // Download
       downloadBtn.classList.remove('hidden');
       downloadBtn.onclick = () => {
         const blob = new Blob([summaryText], { type: 'text/plain' });
@@ -710,7 +710,7 @@
         URL.revokeObjectURL(url);
       };
 
-      // LOG (usage) to /log (as before)
+      // LOG usage
       try {
         const params = new URLSearchParams(window.location.search);
         const licenseKey = params.get('license') || '';
@@ -729,7 +729,7 @@
         }).catch(() => {});
       } catch (e) {}
 
-      // FULL SUBMISSION to /submit-form (for storage + email)
+      // FULL SUBMISSION to /submit-form
       try {
         const params = new URLSearchParams(window.location.search);
         const licenseKey = params.get('license') || '';
