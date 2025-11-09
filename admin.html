@@ -1,238 +1,327 @@
-<!doctype html>
+      <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>License Admin Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contract Readiness – License Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 10px;
       background: #f9fafb;
+      margin: 0;
+      padding: 0;
+      color: #111827;
     }
-    h2 {
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
       text-align: center;
-      margin-bottom: 8px;
+      color: #1e3a8a;
+      margin-bottom: 10px;
     }
     .controls {
       display: flex;
-      flex-direction: column;
-      max-width: 320px;
-      margin: 0 auto;
-      text-align: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
     }
-    label {
-      font-size: 13px;
-      text-align: left;
-      margin-top: 4px;
-    }
-    input, button {
-      margin: 4px 0;
+    input[type="text"] {
       padding: 6px;
-      font-size: 14px;
-      width: 100%;
-      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #d1d5db;
+      flex: 1;
+      min-width: 0;
     }
     button {
       background: #2563eb;
-      color: #fff;
+      color: white;
       border: none;
       border-radius: 6px;
-      font-weight: 600;
+      padding: 8px 12px;
       cursor: pointer;
+      font-size: 14px;
     }
     button:hover {
       background: #1e40af;
-    }
-    .status {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 13px;
-    }
-    .status.error {
-      color: #b91c1c;
-    }
-    .status.ok {
-      color: #15803d;
-    }
-    .metrics {
-      text-align: center;
-      margin-top: 6px;
-      font-size: 13px;
-      color: #374151;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      font-size: 12px;
+      font-size: 13px;
     }
     th, td {
-      border: 1px solid #ccc;
-      padding: 4px;
+      border: 1px solid #e5e7eb;
+      padding: 6px;
       text-align: left;
+      vertical-align: top;
     }
     th {
       background: #e5e7eb;
     }
-    tr.inactive {
-      background: #fee2e2;
+    tr:nth-child(even) {
+      background: #f9fafb;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: white;
+    }
+    .badge-active {
+      background: #16a34a;
+    }
+    .badge-inactive {
+      background: #b91c1c;
+    }
+    #editPanel {
+      margin-top: 16px;
+      background: #f3f4f6;
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #111827;
     }
   </style>
 </head>
 <body>
-  <h2>Contract Readiness Widget – Admin Dashboard</h2>
-  <div class="controls">
-    <label>Admin Secret:</label>
-    <input id="adminSecret" type="password" placeholder="Enter admin secret">
+  <div class="container">
+    <h1>License Admin</h1>
 
-    <label>Search (name, email, company, license):</label>
-    <input id="search" type="text" placeholder="Search...">
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Search by name, email, company, license key">
+      <button id="searchBtn">Search</button>
+      <button id="refreshBtn">Refresh</button>
+    </div>
 
-    <button id="loadBtn">Load Licenses</button>
+    <div id="status"></div>
+
+    <table id="licensesTable">
+      <thead>
+        <tr>
+          <th>License Key</th>
+          <th>Owner</th>
+          <th>Company</th>
+          <th>Email</th>
+          <th>Notify Email</th>
+          <th>Domains</th>
+          <th>Plan</th>
+          <th>Active</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div id="editPanel">
+      <h3>Edit License</h3>
+      <div id="editKey" style="font-size:12px; color:#6b7280;"></div>
+      <label>
+        Company
+        <input type="text" id="editCompany">
+      </label>
+      <label>
+        Notify Email (lead destination for this buyer)
+        <input type="text" id="editNotifyEmail" placeholder="leads@client.com">
+      </label>
+      <label>
+        Allowed Domains (comma separated, e.g. example.com, clientsite.com)
+        <input type="text" id="editDomains">
+      </label>
+      <label>
+        <input type="checkbox" id="editActive"> Active
+      </label>
+      <button id="saveEditBtn">Save Changes</button>
+    </div>
   </div>
 
-  <div id="statusMsg" class="status"></div>
-  <div id="metrics" class="metrics"></div>
-
-  <table id="table" style="display:none;">
-    <thead>
-      <tr>
-        <th>License</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Company</th>
-        <th>Domains</th>
-        <th>Active</th>
-        <th>Created</th>
-        <th>Toggle</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
   <script>
-    // 🔴 Make sure this matches your Render URL
     const apiBase = 'https://contract-readiness-widget.onrender.com';
+    let adminSecret = '';
+    let licensesCache = [];
+    let selectedKey = null;
 
-    async function loadLicenses() {
-      const secret = document.getElementById('adminSecret').value.trim();
-      const search = document.getElementById('search').value.trim();
-      const statusMsg = document.getElementById('statusMsg');
-      const metrics = document.getElementById('metrics');
-      const table = document.getElementById('table');
-      const tbody = table.querySelector('tbody');
-
-      statusMsg.textContent = 'Loading licenses...';
-      statusMsg.className = 'status';
-      metrics.textContent = '';
-      tbody.innerHTML = '';
-      table.style.display = 'none';
-
-      if (!secret) {
-        statusMsg.textContent = 'Please enter your admin secret.';
-        statusMsg.className = 'status error';
-        return;
+    function promptAdminSecret() {
+      adminSecret = window.prompt('Enter ADMIN_SECRET:');
+      if (!adminSecret) {
+        document.getElementById('status').textContent = 'Admin secret is required.';
+      } else {
+        loadLicenses();
       }
+    }
 
-      let data;
+    async function loadLicenses(search = '') {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Loading licenses...';
+
       try {
-        const res = await fetch(apiBase + '/admin/licenses?search=' + encodeURIComponent(search), {
-          headers: { 'x-admin-secret': secret }
-        });
+        const params = new URLSearchParams();
+        params.set('admin', adminSecret);
+        if (search) params.set('search', search);
 
-        if (!res.ok) {
-          statusMsg.textContent = 'Server error: HTTP ' + res.status;
-          statusMsg.className = 'status error';
+        const res = await fetch(apiBase + '/admin/licenses?' + params.toString());
+        const data = await res.json();
+
+        if (!data.ok) {
+          statusEl.textContent = 'Error loading licenses.';
           return;
         }
 
-        data = await res.json();
+        licensesCache = data.licenses || [];
+        renderTable();
+        statusEl.textContent = `Loaded ${licensesCache.length} license(s).`;
       } catch (err) {
         console.error(err);
-        statusMsg.textContent = 'Error contacting server. Check API URL or network.';
-        statusMsg.className = 'status error';
-        return;
+        statusEl.textContent = 'Error loading licenses.';
       }
+    }
 
-      if (!data.ok) {
-        statusMsg.textContent = 'Error: ' + (data.error || 'Unable to load');
-        statusMsg.className = 'status error';
-        return;
-      }
+    function renderTable() {
+      const tbody = document.querySelector('#licensesTable tbody');
+      tbody.innerHTML = '';
 
-      const licenses = data.licenses || [];
-
-      if (!licenses.length) {
-        statusMsg.textContent = 'No licenses found.';
-        statusMsg.className = 'status';
-        return;
-      }
-
-      // Live metrics
-      const total = licenses.length;
-      const activeCount = licenses.filter(l => l.active).length;
-      const inactiveCount = total - activeCount;
-      const lastCreated = licenses[0].created_at || '';
-
-      metrics.textContent =
-        `Total: ${total} | Active: ${activeCount} | Inactive: ${inactiveCount}` +
-        (lastCreated ? ` | Last created: ${lastCreated}` : '');
-
-      licenses.forEach(lic => {
+      licensesCache.forEach(lic => {
         const tr = document.createElement('tr');
-        if (!lic.active) tr.classList.add('inactive');
-        const domains = (lic.allowed_domains || []).join(', ');
 
-        tr.innerHTML = `
-          <td>${lic.key}</td>
-          <td>${(lic.first_name || '')} ${(lic.last_name || '')}</td>
-          <td>${lic.email || ''}</td>
-          <td>${lic.company || ''}</td>
-          <td>${domains}</td>
-          <td>${lic.active ? 'Yes' : 'No'}</td>
-          <td>${lic.created_at || ''}</td>
-          <td><button data-key="${lic.key}" data-active="${lic.active ? '1':'0'}">
-            ${lic.active ? 'Deactivate' : 'Activate'}
-          </button></td>
-        `;
+        const tdKey = document.createElement('td');
+        tdKey.textContent = lic.key;
+        tr.appendChild(tdKey);
+
+        const tdOwner = document.createElement('td');
+        tdOwner.textContent = (lic.first_name || '') + ' ' + (lic.last_name || '');
+        tr.appendChild(tdOwner);
+
+        const tdCompany = document.createElement('td');
+        tdCompany.textContent = lic.company || '';
+        tr.appendChild(tdCompany);
+
+        const tdEmail = document.createElement('td');
+        tdEmail.textContent = lic.email || '';
+        tr.appendChild(tdEmail);
+
+        const tdNotify = document.createElement('td');
+        tdNotify.textContent = lic.notify_email || '';
+        tr.appendChild(tdNotify);
+
+        const tdDomains = document.createElement('td');
+        tdDomains.textContent = Array.isArray(lic.allowed_domains)
+          ? lic.allowed_domains.join(', ')
+          : '';
+        tr.appendChild(tdDomains);
+
+        const tdPlan = document.createElement('td');
+        tdPlan.textContent = lic.plan || '';
+        tr.appendChild(tdPlan);
+
+        const tdActive = document.createElement('td');
+        const span = document.createElement('span');
+        span.className = 'badge ' + (lic.active ? 'badge-active' : 'badge-inactive');
+        span.textContent = lic.active ? 'Active' : 'Inactive';
+        tdActive.appendChild(span);
+        tr.appendChild(tdActive);
+
+        const tdCreated = document.createElement('td');
+        tdCreated.textContent = lic.created_at || '';
+        tr.appendChild(tdCreated);
+
+        const tdActions = document.createElement('td');
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.style.fontSize = '11px';
+        editBtn.addEventListener('click', () => openEdit(lic));
+        tdActions.appendChild(editBtn);
+        tr.appendChild(tdActions);
+
         tbody.appendChild(tr);
-      });
-
-      table.style.display = 'table';
-      statusMsg.textContent = `Loaded ${licenses.length} license(s).`;
-      statusMsg.className = 'status ok';
-
-      // Hook up toggle buttons
-      tbody.querySelectorAll('button').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const key = btn.getAttribute('data-key');
-          const active = btn.getAttribute('data-active') === '1';
-          const newActive = !active;
-
-          try {
-            const res = await fetch(apiBase + '/admin/licenses/' + encodeURIComponent(key), {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-admin-secret': secret
-              },
-              body: JSON.stringify({ active: newActive })
-            });
-            const updated = await res.json();
-            if (!updated.ok) {
-              alert('Error updating license: ' + (updated.error || 'unknown'));
-            } else {
-              loadLicenses();
-            }
-          } catch (err) {
-            alert('Network error updating license.');
-          }
-        });
       });
     }
 
-    document.getElementById('loadBtn').addEventListener('click', loadLicenses);
+    function openEdit(lic) {
+      selectedKey = lic.key;
+      document.getElementById('editKey').textContent = 'Editing license: ' + lic.key;
+      document.getElementById('editCompany').value = lic.company || '';
+      document.getElementById('editNotifyEmail').value = lic.notify_email || '';
+      document.getElementById('editDomains').value = Array.isArray(lic.allowed_domains)
+        ? lic.allowed_domains.join(', ')
+        : '';
+      document.getElementById('editActive').checked = !!lic.active;
+
+      document.getElementById('editPanel').style.display = 'block';
+    }
+
+    async function saveEdit() {
+      if (!selectedKey) return;
+
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Saving...';
+
+      const company = document.getElementById('editCompany').value.trim();
+      const notifyEmail = document.getElementById('editNotifyEmail').value.trim();
+      const domainsStr = document.getElementById('editDomains').value.trim();
+      const active = document.getElementById('editActive').checked;
+
+      const allowed_domains = domainsStr
+        ? domainsStr.split(',').map(d => d.trim()).filter(Boolean)
+        : [];
+
+      try {
+        const res = await fetch(
+          apiBase + '/admin/licenses/' + encodeURIComponent(selectedKey) + '?admin=' + encodeURIComponent(adminSecret),
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              company,
+              notify_email: notifyEmail,
+              allowed_domains,
+              active
+            })
+          }
+        );
+        const data = await res.json();
+        if (!data.ok) {
+          statusEl.textContent = 'Error saving license changes.';
+          return;
+        }
+
+        statusEl.textContent = 'License updated.';
+        document.getElementById('editPanel').style.display = 'none';
+        selectedKey = null;
+        loadLicenses(document.getElementById('searchInput').value.trim());
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent = 'Error saving license changes.';
+      }
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      const q = document.getElementById('searchInput').value.trim();
+      loadLicenses(q);
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      document.getElementById('searchInput').value = '';
+      loadLicenses('');
+    });
+
+    document.getElementById('saveEditBtn').addEventListener('click', saveEdit);
+
+    window.addEventListener('load', promptAdminSecret);
   </script>
 </body>
 </html>
