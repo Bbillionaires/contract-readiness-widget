@@ -89,17 +89,27 @@ app.get('/license', (req, res) => {
   });
 });
 
-// --- Usage log endpoint + optional Stripe metered billing ---
+// --- Usage log endpoint (now tracks basic + advanced grades) ---
 app.post('/log', async (req, res) => {
-  const { license, score, letter, insuranceStatus } = req.body || {};
+  const {
+    license,
+    basic_score,
+    basic_letter,
+    advanced_score,
+    advanced_letter,
+    insuranceStatus
+  } = req.body || {};
+
   const origin = req.headers.origin || req.headers.referer || '';
   const reqDomain = getDomainFromOrigin(origin);
 
   const logLine = JSON.stringify({
     ts: new Date().toISOString(),
     license,
-    score,
-    letter,
+    basic_score,
+    basic_letter,
+    advanced_score,
+    advanced_letter,
     insuranceStatus,
     domain: reqDomain
   }) + '\n';
@@ -108,7 +118,7 @@ app.post('/log', async (req, res) => {
     if (err) console.error('Failed to write usage log:', err.message);
   });
 
-  // Stripe metered billing (optional)
+  // Optional Stripe metered billing (per-use)
   try {
     const lic = licenses[license];
     if (stripe && lic && lic.stripe_subscription_item_id) {
